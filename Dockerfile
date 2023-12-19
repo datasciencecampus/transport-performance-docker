@@ -18,8 +18,11 @@ RUN apt-get update && \
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
+# install open JDK java 11
+RUN apt-get -y install openjdk-11-jdk
+
 # install python requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
 # run script
-CMD [ "python", "src/run.py" ]
+CMD [ "java", "--version" ]
