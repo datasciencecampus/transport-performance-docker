@@ -1,11 +1,13 @@
 """src/run.py."""
 
+import os
 import toml
 
-from run_utils import create_dir_structure
+from run_utils import create_dir_structure, setup_logger
 
 # directory to config file
 CONFIG_FILE = "data/inputs/config.toml"
+LOGGER_NAME = "tp-docker-analysis"
 
 
 def main():
@@ -15,7 +17,15 @@ def main():
     general_config = config["general"]
 
     # create directory structure upfront
-    _ = create_dir_structure(general_config["area_name"], add_time=False)
+    dirs = create_dir_structure(general_config["area_name"], add_time=False)
+
+    logger = setup_logger(
+        LOGGER_NAME,
+        file_name=os.path.join(
+            dirs["logger_dir"], f"{general_config['area_name']}_analysis.txt"
+        ),
+    )
+    logger.info(f"Created analysis directory structure at {dirs['files_dir']}")
 
 
 if __name__ == "__main__":
