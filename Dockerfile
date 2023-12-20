@@ -25,4 +25,4 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 RUN pip install --no-cache-dir -r requirements.txt
 
 # run script
-CMD [ "osmosis", "--version" ]
+CMD [ "python", "src/run.py" ]
