@@ -7,7 +7,6 @@ WORKDIR /analysis
 # copy necessary files
 COPY requirements.txt /analysis/
 COPY ./src /analysis/src/
-COPY ./data /analysis/data/
 
 # install dependencies - openJDK11, GDAL, osmosis
 # for openjdk + osmosis: advice taken from here: https://github.com/datasciencecampus/studious-sniffle/blob/main/Dockerfile
