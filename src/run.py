@@ -10,7 +10,7 @@ from transport_performance.urban_centres.raster_uc import UrbanCentre
 from transport_performance.population.rasterpop import RasterPop
 from transport_performance.utils.raster import sum_resample_file
 
-from run_utils import create_dir_structure, setup_logger
+from run_utils import create_dir_structure, setup_logger, plot
 
 # directory to config file
 CONFIG_FILE = "data/inputs/config.toml"
@@ -86,8 +86,14 @@ def main():
         urban_centre_bounds=urban_centre_bounds,
     )
     plot_output = os.path.join(dirs["pop_outputs_dir"], "population.html")
-    m = pop_gdf.explore("population")
-    m.save(plot_output)
+    plot(
+        pop_gdf,
+        column="population",
+        column_control_name="Population",
+        cmap="viridis",
+        uc_gdf=uc_gdf[0:1],
+        save=plot_output,
+    )
     logger.info(f"Saved population map: {plot_output}")
     logger.info("Population pre-processing complete.")
 
