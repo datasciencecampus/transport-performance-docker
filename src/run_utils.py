@@ -40,6 +40,7 @@ def create_dir_structure(area_name: str, add_time: bool = True) -> dict:
         "interim_gtfs": os.path.join(interim_dir, "gtfs"),
         "interim_osm": os.path.join(interim_dir, "osm"),
         "outputs_dir": outputs_dir,
+        "uc_outputs_dir": os.path.join(outputs_dir, "urban_centre"),
         "logger_dir": os.path.join(outputs_dir, "log"),
     }
 
