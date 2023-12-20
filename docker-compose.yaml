@@ -1,0 +1,6 @@
+version: '3'
+services:
+  tp-analysis:
+    image: transport-performance:latest
+    volumes:
+      - ./data:/analysis/data/
