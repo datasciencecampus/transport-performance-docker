@@ -1,10 +1,22 @@
 """src/run.py."""
 
-import os
+import toml
 
-output_dir = os.path.join(os.getcwd(), "data", "outputs")
+from run_utils import create_dir_structure
 
-os.makedirs(output_dir, exist_ok=True)
+# directory to config file
+CONFIG_FILE = "data/inputs/config.toml"
 
-with open(os.path.join(output_dir, "test.txt"), "w") as f:
-    pass
+
+def main():
+    """Execute end-to-end analysis."""
+    # read and split out config into separate configs to minimise line lengths
+    config = toml.load(CONFIG_FILE)
+    general_config = config["general"]
+
+    # create directory structure upfront
+    _ = create_dir_structure(general_config["area_name"], add_time=False)
+
+
+if __name__ == "__main__":
+    main()
