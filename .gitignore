@@ -1,5 +1,23 @@
 ### Project structure ###
+# ignore all data folder content excep the necessary gitkeeps to help preserve
+# required input folder structure
 data/*
+!data/inputs/
+data/inputs/*
+!data/inputs/README.md
+!data/inputs/gtfs/
+data/inputs/gtfs/*
+!data/inputs/gtfs/README.md
+!data/inputs/osm/
+data/inputs/osm/*
+!data/inputs/osm/README.md
+!data/inputs/population/
+data/inputs/population/*
+!data/inputs/population/README.md
+!data/inputs/urban_centre/
+data/inputs/urban_centre/*
+!data/inputs/urban_centre/README.md
+
 outputs/*
 
 ### Contentious file types (can be removed at user discretion) ###
