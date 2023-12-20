@@ -21,6 +21,10 @@ cd transport-performance-docker
 docker build -t transport-performance .
 ```
 
+The `transport-performance` docker image should then be visable using `docker images` in a CLI
+
+> Note: steps 2 and 3 are temporary while this image is not hosted (somewhere like DockerHub, for example).
+
 ## Usage
 
 This section covers general usage instructions only. Developers, see [CONTRIBUTING.md] for more details.
