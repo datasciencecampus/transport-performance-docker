@@ -1,5 +1,6 @@
 """src/run.py."""
 
+import datetime
 import geopandas as gpd
 import glob
 import os
@@ -9,6 +10,11 @@ from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
 from transport_performance.population.rasterpop import RasterPop
 from transport_performance.utils.raster import sum_resample_file
+from r5py import (
+    TransportNetwork,
+    TravelTimeMatrixComputer,
+    TransportMode,
+)
 
 from utils import create_dir_structure, setup_logger, plot
 
@@ -24,6 +30,7 @@ def main():
     general_config = config["general"]
     uc_config = config["urban_centre"]
     pop_config = config["population"]
+    analyse_net_config = config["analyse_network"]
 
     # create directory structure upfront
     dirs = create_dir_structure(general_config["area_name"], add_time=False)
@@ -80,7 +87,7 @@ def main():
 
     # get population data
     rp = RasterPop(pop_input)
-    pop_gdf, _ = rp.get_pop(
+    pop_gdf, centroid_gdf = rp.get_pop(
         aoi_bounds,
         threshold=pop_config["threshold"],
         urban_centre_bounds=urban_centre_bounds,
@@ -96,6 +103,43 @@ def main():
     )
     logger.info(f"Saved population map: {plot_output}")
     logger.info("Population pre-processing complete.")
+
+    logger.info("Building transport network...")
+    # build the transport network
+    trans_net = TransportNetwork(
+        glob.glob("data/inputs/osm/*.pbf")[0],
+        [glob.glob("data/inputs/gtfs/*.zip")[0]],
+    )
+
+    logger.info("Calculating OD matrix...")
+    # build the computer
+    travel_time_matrix_computer = TravelTimeMatrixComputer(
+        trans_net,
+        origins=centroid_gdf,
+        destinations=centroid_gdf[centroid_gdf.within_urban_centre],
+        departure=datetime.datetime(
+            analyse_net_config["departure_year"],
+            analyse_net_config["departure_month"],
+            analyse_net_config["departure_day"],
+            analyse_net_config["departure_hour"],
+            analyse_net_config["departure_minute"],
+        ),
+        departure_time_window=datetime.timedelta(
+            hours=analyse_net_config["departure_time_window"],
+        ),
+        max_time=datetime.timedelta(
+            minutes=analyse_net_config["max_time"],
+        ),
+        transport_modes=[TransportMode.TRANSIT],
+    )
+
+    # run the computer
+    travel_times = travel_time_matrix_computer.compute_travel_times()
+    tt_output_path = os.path.join(
+        dirs["an_outputs_dir"], "travel_times.parquet"
+    )
+    travel_times.to_parquet(tt_output_path)
+    logger.info(f"OD matrix written to: {dirs['an_outputs_dir']}")
 
 
 if __name__ == "__main__":
