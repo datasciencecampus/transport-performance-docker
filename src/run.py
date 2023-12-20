@@ -10,7 +10,7 @@ from transport_performance.urban_centres.raster_uc import UrbanCentre
 from transport_performance.population.rasterpop import RasterPop
 from transport_performance.utils.raster import sum_resample_file
 
-from run_utils import create_dir_structure, setup_logger, plot
+from utils import create_dir_structure, setup_logger, plot
 
 # directory to config file
 CONFIG_FILE = "data/inputs/config.toml"
