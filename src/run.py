@@ -7,6 +7,8 @@ import toml
 
 from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
+from transport_performance.population.rasterpop import RasterPop
+from transport_performance.utils.raster import sum_resample_file
 
 from run_utils import create_dir_structure, setup_logger
 
@@ -21,6 +23,7 @@ def main():
     config = toml.load(CONFIG_FILE)
     general_config = config["general"]
     uc_config = config["urban_centre"]
+    pop_config = config["population"]
 
     # create directory structure upfront
     dirs = create_dir_structure(general_config["area_name"], add_time=False)
@@ -61,6 +64,32 @@ def main():
     m.save(uc_output_path)
     logger.info(f"Saved urban centre map: {uc_output_path}")
     logger.info("Urban centre detection complete.")
+
+    logger.info("Resampling population data...")
+    pop_raw_input = glob.glob("data/inputs/population/*.tif")[0]
+    pop_filename = os.path.basename(pop_raw_input).replace(
+        ".tif", "_resampled.tif"
+    )
+    pop_input = os.path.join(dirs["interim_pop"], pop_filename)
+    sum_resample_file(pop_raw_input, pop_input)
+
+    # extract geometries from urban centre detection
+    logger.info("Pre-process population data using detected urban centre...")
+    aoi_bounds = uc_gdf.loc["buffer"].geometry
+    urban_centre_bounds = uc_gdf.loc["vectorized_uc"].geometry
+
+    # get population data
+    rp = RasterPop(pop_input)
+    pop_gdf, _ = rp.get_pop(
+        aoi_bounds,
+        threshold=pop_config["threshold"],
+        urban_centre_bounds=urban_centre_bounds,
+    )
+    plot_output = os.path.join(dirs["pop_outputs_dir"], "population.html")
+    m = pop_gdf.explore("population")
+    m.save(plot_output)
+    logger.info(f"Saved population map: {plot_output}")
+    logger.info("Population pre-processing complete.")
 
 
 if __name__ == "__main__":
