@@ -1,4 +1,7 @@
 ### Project structure ###
+# moved to top to all exceptions
+*.pkl
+
 # ignore all data folder content excep the necessary gitkeeps to help preserve
 # required input folder structure
 data/*
@@ -8,6 +11,7 @@ data/inputs/*
 !data/inputs/gtfs/
 data/inputs/gtfs/*
 !data/inputs/gtfs/README.md
+!data/inputs/gtfs/route_lookup.pkl
 !data/inputs/osm/
 data/inputs/osm/*
 !data/inputs/osm/README.md
@@ -31,7 +35,6 @@ outputs/*
 *.pdf
 *.zip
 *.csv
-*.pkl
 *.rds
 *.rda
 *.parquet
