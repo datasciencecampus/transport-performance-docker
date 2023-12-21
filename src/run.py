@@ -2,6 +2,7 @@
 
 import datetime
 import geopandas as gpd
+import gtfs_kit as gk
 import glob
 import os
 import pandas as pd
@@ -10,6 +11,8 @@ import toml
 from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
 from transport_performance.population.rasterpop import RasterPop
+from transport_performance.gtfs.gtfs_utils import bbox_filter_gtfs
+from transport_performance.gtfs.validation import GtfsInstance
 from transport_performance.osm.osm_utils import filter_osm
 from transport_performance.analyse_network import AnalyseNetwork
 from transport_performance.metrics import transport_performance
@@ -32,6 +35,7 @@ def main():
     general_config = config["general"]
     uc_config = config["urban_centre"]
     pop_config = config["population"]
+    gtfs_config = config["gtfs"]
     osm_config = config["osm"]
     analyse_net_config = config["analyse_network"]
 
@@ -107,6 +111,46 @@ def main():
     logger.info(f"Saved population map: {plot_output}")
     logger.info("Population pre-processing complete.")
 
+    # clip gtfs to region of interest, setting crs to match the bbox
+    logger.info("Clipping GTFS data to urban centre bounding box.")
+    gtfs_bbox = list(uc_gdf.loc["bbox"].geometry.bounds)
+    gtfs_filtered_path = Path(
+        os.path.join(dirs["interim_gtfs"], "filtered.zip")
+    )
+    bbox_filter_gtfs(
+        in_pth=Path(glob.glob("data/inputs/gtfs/*.zip")[0]),
+        out_pth=gtfs_filtered_path,
+        bbox=gtfs_bbox,
+        units=gtfs_config["units"],
+        crs=uc_gdf.crs.to_string(),
+    )
+
+    logger.info("Reading filtered GTFS...")
+    gtfs = GtfsInstance(
+        gtfs_pth=gtfs_filtered_path,
+        units=gtfs_config["units"],
+        route_lookup_pth="data/inputs/gtfs/route_lookup.pkl",
+    )
+    available_dates = gtfs.feed.get_dates()
+    s = available_dates[0]
+    f = available_dates[-1]
+    logger.info(f"{len(available_dates)} dates available between {s} & {f}.")
+
+    logger.info("Validating filtered GTFS...")
+    gtfs.is_valid()
+
+    logger.info("Cleaning filtered GTFS...")
+    gtfs.clean_feed()
+
+    logger.info("Writing cleaned GTFS to file...")
+    # TODO: remove this date restriction as it is incorrect, but needed to
+    # ensure consistency with previous results
+    gtfs.feed = gk.miscellany.restrict_to_dates(gtfs.feed, ["20231027"])
+    gtfs_filtered_path = Path(
+        os.path.join(dirs["interim_gtfs"], "cleaned.zip")
+    )
+    gtfs.feed.write(gtfs_filtered_path)
+
     logger.info("Cropping OSM input to urban centre BBOX...")
     osm_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
     filtered_osm_path = Path(
@@ -124,7 +168,7 @@ def main():
     an = AnalyseNetwork(
         centroid_gdf,
         filtered_osm_path,
-        [glob.glob("data/inputs/gtfs/*.zip")[0]],
+        [gtfs_filtered_path],
         dirs["an_outputs_dir"],
     )
 
