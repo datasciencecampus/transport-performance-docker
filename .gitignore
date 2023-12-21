@@ -8,6 +8,7 @@ data/*
 !data/inputs/
 data/inputs/*
 !data/inputs/README.md
+!data/inputs/config.toml
 !data/inputs/gtfs/
 data/inputs/gtfs/*
 !data/inputs/gtfs/README.md
