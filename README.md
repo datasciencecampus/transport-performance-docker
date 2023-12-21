@@ -61,6 +61,15 @@ All input data should be placed within subdirectories of the `data/inputs/` fold
 
 > Note: currently, the same config files used in [`transport-network-performance`] can be used here too, with some exceptions (mainly, there is not control over where outputs are saved).
 
+### Current known limitations
+
+Below is a summary of the main currently known limitations. See the [GitHub repo issues](https://github.com/datasciencecampus/transport-performance-docker/issues) tab for more details.
+
+1. Primitive OSM and GTFS input file handling - can only have one file per directory [#1](https://github.com/datasciencecampus/transport-performance-docker/issues/1)
+2. Can only validate and clean a single GTFS [#2](https://github.com/datasciencecampus/transport-performance-docker/issues/2)
+3. Does not have `pyosmium`/`osmium-tool` dependencies (`validate_osm` not useable) [#3] (https://github.com/datasciencecampus/transport-performance-docker/issues/3)
+4. Contains QA-validation checks for Newport - needs to be removed to allow analysis of other areas [#7] (https://github.com/datasciencecampus/transport-performance-docker/issues/7)
+
 ## Data Science Campus
 At the [Data Science Campus](https://datasciencecampus.ons.gov.uk/about-us/) we apply data science, and build skills, for public good across the UK and internationally. Get in touch with the Campus at [datasciencecampus@ons.gov.uk](datasciencecampus@ons.gov.uk).
 
