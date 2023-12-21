@@ -4,17 +4,16 @@ import datetime
 import geopandas as gpd
 import glob
 import os
+import pandas as pd
 import toml
 
 from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
 from transport_performance.population.rasterpop import RasterPop
+from transport_performance.analyse_network import AnalyseNetwork
 from transport_performance.utils.raster import sum_resample_file
-from r5py import (
-    TransportNetwork,
-    TravelTimeMatrixComputer,
-    TransportMode,
-)
+from r5py import TransportMode
+from pandas.testing import assert_frame_equal
 
 from utils import create_dir_structure, setup_logger, plot
 
@@ -105,18 +104,15 @@ def main():
     logger.info("Population pre-processing complete.")
 
     logger.info("Building transport network...")
-    # build the transport network
-    trans_net = TransportNetwork(
+    an = AnalyseNetwork(
+        centroid_gdf,
         glob.glob("data/inputs/osm/*.pbf")[0],
         [glob.glob("data/inputs/gtfs/*.zip")[0]],
+        dirs["an_outputs_dir"],
     )
 
     logger.info("Calculating OD matrix...")
-    # build the computer
-    travel_time_matrix_computer = TravelTimeMatrixComputer(
-        trans_net,
-        origins=centroid_gdf,
-        destinations=centroid_gdf[centroid_gdf.within_urban_centre],
+    an.od_matrix(
         departure=datetime.datetime(
             analyse_net_config["departure_year"],
             analyse_net_config["departure_month"],
@@ -132,14 +128,12 @@ def main():
         ),
         transport_modes=[TransportMode.TRANSIT],
     )
-
-    # run the computer
-    travel_times = travel_time_matrix_computer.compute_travel_times()
-    tt_output_path = os.path.join(
-        dirs["an_outputs_dir"], "travel_times.parquet"
-    )
-    travel_times.to_parquet(tt_output_path)
     logger.info(f"OD matrix written to: {dirs['an_outputs_dir']}")
+
+    df1 = pd.read_parquet(dirs["an_outputs_dir"]).reset_index(drop=True)
+    df2 = pd.read_parquet("data/check/newport_qa.parquet")
+    assert_frame_equal(df1, df2)
+    logger.info("OD matrix is consistent with expected results!")
 
 
 if __name__ == "__main__":
