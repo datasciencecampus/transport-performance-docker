@@ -138,9 +138,48 @@ def main():
 
     logger.info("Validating filtered GTFS...")
     gtfs.is_valid()
+    pre_clean_valid_path = os.path.join(
+        dirs["gtfs_outputs_dir"], "pre_clean_validity.csv"
+    )
+    gtfs.validity_df.to_csv(pre_clean_valid_path, index=False)
+    logger.info(f"Pre-cleaning validity data saved: {pre_clean_valid_path}")
 
     logger.info("Cleaning filtered GTFS...")
     gtfs.clean_feed()
+
+    logger.info("Validating filtered GTFS post cleaning...")
+    gtfs.is_valid()
+    post_clean_valid_path = os.path.join(
+        dirs["gtfs_outputs_dir"], "post_clean_validity.csv"
+    )
+    gtfs.validity_df.to_csv(post_clean_valid_path, index=False)
+    logger.info(f"Post-cleaning validity data saved: {post_clean_valid_path}")
+
+    logger.info("Calulating trips and routes summarys...")
+    route_modes_path = os.path.join(
+        dirs["gtfs_outputs_dir"], "route_modes.csv"
+    )
+    route_modes = gtfs.get_route_modes()
+    route_modes.to_csv(route_modes_path)
+    logger.info(f"Post-cleaning route modes saved: {route_modes_path}")
+    route_summary_path = os.path.join(
+        dirs["gtfs_outputs_dir"], "routes_summary.csv"
+    )
+    route_summary = gtfs.summarise_routes(return_summary=False)
+    route_summary.to_csv(route_summary_path)
+    logger.info(f"Post-cleaning routes summary saved: {route_summary_path}")
+    trip_summary_path = os.path.join(
+        dirs["gtfs_outputs_dir"], "trips_summary.csv"
+    )
+    trip_summary = gtfs.summarise_trips(return_summary=False)
+    trip_summary.to_csv(trip_summary_path)
+    logger.info(f"Post-cleaning trips summary saved: {trip_summary_path}")
+    stops_map_path = os.path.join(dirs["gtfs_outputs_dir"], "stops.html")
+    gtfs.viz_stops(stops_map_path)
+    logger.info(f"Post-cleaning stops map saved: {stops_map_path}")
+    hull_map_path = os.path.join(dirs["gtfs_outputs_dir"], "convex_hull.html")
+    gtfs.viz_stops(hull_map_path, geoms="hull")
+    logger.info(f"Post-cleaning convex hull map saved: {hull_map_path}")
 
     logger.info("Writing cleaned GTFS to file...")
     # TODO: remove this date restriction as it is incorrect, but needed to
