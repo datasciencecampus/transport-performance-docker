@@ -10,11 +10,13 @@ import toml
 from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
 from transport_performance.population.rasterpop import RasterPop
+from transport_performance.osm.osm_utils import filter_osm
 from transport_performance.analyse_network import AnalyseNetwork
 from transport_performance.metrics import transport_performance
 from transport_performance.utils.raster import sum_resample_file
 from r5py import TransportMode
 from pandas.testing import assert_frame_equal
+from pathlib import Path
 
 from utils import create_dir_structure, setup_logger, plot
 
@@ -30,6 +32,7 @@ def main():
     general_config = config["general"]
     uc_config = config["urban_centre"]
     pop_config = config["population"]
+    osm_config = config["osm"]
     analyse_net_config = config["analyse_network"]
 
     # create directory structure upfront
@@ -104,10 +107,23 @@ def main():
     logger.info(f"Saved population map: {plot_output}")
     logger.info("Population pre-processing complete.")
 
+    logger.info("Cropping OSM input to urban centre BBOX...")
+    osm_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
+    filtered_osm_path = Path(
+        os.path.join(dirs["interim_osm"], "filtered.osm.pbf")
+    )
+    filter_osm(
+        pbf_pth=Path(glob.glob("data/inputs/osm/*.pbf")[0]),
+        out_pth=filtered_osm_path,
+        bbox=osm_bbox,
+        tag_filter=osm_config["tag_filter"],
+    )
+    logger.info("OSM cropping complete.")
+
     logger.info("Building transport network...")
     an = AnalyseNetwork(
         centroid_gdf,
-        glob.glob("data/inputs/osm/*.pbf")[0],
+        filtered_osm_path,
         [glob.glob("data/inputs/gtfs/*.zip")[0]],
         dirs["an_outputs_dir"],
     )
