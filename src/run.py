@@ -11,6 +11,7 @@ from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
 from transport_performance.population.rasterpop import RasterPop
 from transport_performance.analyse_network import AnalyseNetwork
+from transport_performance.metrics import transport_performance
 from transport_performance.utils.raster import sum_resample_file
 from r5py import TransportMode
 from pandas.testing import assert_frame_equal
@@ -134,6 +135,40 @@ def main():
     df2 = pd.read_parquet("data/check/newport_qa.parquet")
     assert_frame_equal(df1, df2)
     logger.info("OD matrix is consistent with expected results!")
+
+    logger.info("Calculating the transport performance...")
+    tp_df, stats_df = transport_performance(
+        dirs["an_outputs_dir"],
+        centroid_gdf,
+        pop_gdf,
+        urban_centre_name=general_config["area_name"].capitalize(),
+        urban_centre_country=general_config["area_country"].capitalize(),
+        urban_centre_gdf=uc_gdf.reset_index(),
+    )
+    logger.info("Transport performance calculated. Saving output files...")
+    tp_plot_path = os.path.join(
+        dirs["metrics_outputs_dir"], "transport_performance.html"
+    )
+    tp_stats_path = os.path.join(
+        dirs["metrics_outputs_dir"], "transport_performance_stats.csv"
+    )
+    plot(
+        tp_df,
+        column="transport_performance",
+        column_control_name="Transport Performance",
+        uc_gdf=uc_gdf[0:1],
+        cmap="viridis",
+        caption="Transport Performance (%)",
+        save=tp_plot_path,
+    )
+    stats_df.to_csv(tp_stats_path, index=False)
+    logger.info(f"Transport performance map saved: {tp_plot_path}")
+    logger.info(f"Transport performance stats saved: {tp_stats_path}")
+
+    logger.info(
+        f"*** Transport performance analysis of {general_config['area_name']} "
+        "complete! ***"
+    )
 
 
 if __name__ == "__main__":

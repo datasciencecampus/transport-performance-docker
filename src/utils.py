@@ -47,6 +47,7 @@ def create_dir_structure(area_name: str, add_time: bool = True) -> dict:
         "uc_outputs_dir": os.path.join(outputs_dir, "urban_centre"),
         "pop_outputs_dir": os.path.join(outputs_dir, "population"),
         "an_outputs_dir": os.path.join(outputs_dir, "analyse_network"),
+        "metrics_outputs_dir": os.path.join(outputs_dir, "metrics"),
         "logger_dir": os.path.join(outputs_dir, "log"),
     }
 
