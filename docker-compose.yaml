@@ -2,5 +2,7 @@ version: '3'
 services:
   tp-analysis:
     image: transport-performance:latest
+    environment:
+      - CONFIG_PATH=${CONFIG_PATH:-./data/inputs/config/default_config.toml}
     volumes:
       - ./data:/analysis/data/

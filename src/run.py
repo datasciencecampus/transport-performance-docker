@@ -23,15 +23,15 @@ from pathlib import Path
 
 from utils import create_dir_structure, setup_logger, plot
 
-# directory to config file
-CONFIG_FILE = "data/inputs/config.toml"
+# set the container logger name
 LOGGER_NAME = "tp-docker-analysis"
 
 
 def main():
     """Execute end-to-end analysis."""
     # read and split out config into separate configs to minimise line lengths
-    config = toml.load(CONFIG_FILE)
+    config_file = os.getenv("CONFIG_PATH")
+    config = toml.load(config_file)
     general_config = config["general"]
     uc_config = config["urban_centre"]
     pop_config = config["population"]
@@ -52,6 +52,7 @@ def main():
         f"Analysing transport performane of {general_config['area_name']}"
     )
     logger.info(f"Created analysis directory structure at {dirs['files_dir']}")
+    logger.info(f"Using config file {config_file}")
 
     logger.info("Detecting urban centre...")
     # put bbox into a geopandas dataframe for `get_urban_centre` input
