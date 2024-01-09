@@ -10,7 +10,8 @@ bbox = [
     6014542.675452075,
     -178899.95729310974,
     6239314.71054581
-]  # must in in 'ESRI:54009', this represents a BBOX around Wales
+]  # must in in 'ESRI:54009'
+bbox_crs = "ESRI:54009"
 centre = [51.5773597, -2.9660008]
 centre_crs = "EPSG:4326"
 buffer_size = 12000

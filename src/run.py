@@ -58,8 +58,13 @@ def main():
     logger.info("Detecting urban centre...")
     # put bbox into a geopandas dataframe for `get_urban_centre` input
     bbox_gdf = gpd.GeoDataFrame(
-        geometry=[box(*uc_config["bbox"])], crs="ESRI:54009"
+        geometry=[box(*uc_config["bbox"])], crs=uc_config["bbox_crs"]
     )
+    if uc_config["bbox_crs"] != "ESRI:54009":
+        logger.info(
+            f"Convering bbox_gdf from {uc_config['bbox_crs']} to 'ESRI:54009'"
+        )
+        bbox_gdf.to_crs("ESRI:54009", inplace=True)
 
     # detect urban centre
     uc = UrbanCentre(glob.glob("data/inputs/urban_centre/*.tif")[0])
