@@ -250,6 +250,8 @@ def main():
     logger.info("Calculating OD matrix...")
     analysis_dt = datetime.datetime.strptime(general_config["date"], "%Y%m%d")
     an.od_matrix(
+        batch_orig=analyse_net_config["batch_orig"],
+        distance=general_config["max_distance"] / 1000,  # to convert to Km
         departure=datetime.datetime(
             analysis_dt.year,
             analysis_dt.month,
@@ -261,7 +263,7 @@ def main():
             hours=analyse_net_config["departure_time_window"],
         ),
         max_time=datetime.timedelta(
-            minutes=analyse_net_config["max_time"],
+            minutes=general_config["max_time"],
         ),
         transport_modes=[TransportMode.TRANSIT],
     )
@@ -281,6 +283,8 @@ def main():
         dirs["an_outputs_dir"],
         centroid_gdf,
         pop_gdf,
+        travel_time_threshold=general_config["max_time"],
+        distance_threshold=general_config["max_distance"],
         urban_centre_name=general_config["area_name"].capitalize(),
         urban_centre_country=general_config["area_country"].capitalize(),
         urban_centre_gdf=uc_gdf.reset_index(),

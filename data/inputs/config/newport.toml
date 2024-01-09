@@ -4,6 +4,8 @@ title = "Config for an E2E example around the Newport area"
 area_name = "newport"
 area_country = "wales"
 date = "20230808"  # needs to be GTFS type date string-like YYYYMMDD
+max_time = 45   # this is in minutes
+max_distance = 11250  # this is in meters
 
 [urban_centre]  # configuration section for urban centre
 bbox = [
@@ -33,8 +35,6 @@ tag_filter = false
 departure_hour = 8
 departure_minute = 0
 departure_time_window = 1  # this is in hours
-max_time = 45  # this is in minutes
+batch_orig = false
 
 [metrics]  # configuration for the metrics stage
-cut_off_time = 45   # this is in minutes
-cut_off_distance = 11250  # this is in meters
