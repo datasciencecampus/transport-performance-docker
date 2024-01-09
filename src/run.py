@@ -31,6 +31,19 @@ CONFIG_PREFIX = "data/inputs/config/"
 
 def main():
     """Execute end-to-end analysis."""
+    # immediate error handling (to fail fast)
+    # TODO: add in other immediate input error handling
+    osm_file = glob.glob("data/inputs/osm/*.pbf")
+    if len(osm_file) == 0:
+        raise FileNotFoundError("No OSM input data found.")
+    elif len(osm_file) > 1:
+        raise ValueError(
+            "Too many OSM files in input folder. Unable to determine correct "
+            "input. Remove unnecessary inputs from this directory."
+        )
+    else:
+        osm_file = Path(osm_file[0])
+
     # read and split out config into separate configs to minimise line lengths
     config_file = os.path.join(CONFIG_PREFIX, os.getenv("CONFIG_FILE"))
     config = toml.load(config_file)
@@ -218,7 +231,7 @@ def main():
         os.path.join(dirs["interim_osm"], "filtered.osm.pbf")
     )
     filter_osm(
-        pbf_pth=Path(glob.glob("data/inputs/osm/*.pbf")[0]),
+        pbf_pth=osm_file,
         out_pth=filtered_osm_path,
         bbox=osm_bbox,
         tag_filter=osm_config["tag_filter"],
@@ -253,6 +266,7 @@ def main():
     )
     logger.info(f"OD matrix written to: {dirs['an_outputs_dir']}")
 
+    # TODO: remove snippet when generalising
     df1 = pd.read_parquet(dirs["an_outputs_dir"]).reset_index(drop=True)
     df2 = pd.read_parquet("data/check/newport_qa.parquet")
     assert_frame_equal(df1, df2)
