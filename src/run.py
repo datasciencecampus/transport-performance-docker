@@ -2,7 +2,6 @@
 
 import datetime
 import geopandas as gpd
-import gtfs_kit as gk
 import glob
 import os
 import pandas as pd
@@ -11,8 +10,7 @@ import toml
 from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
 from transport_performance.population.rasterpop import RasterPop
-from transport_performance.gtfs.gtfs_utils import bbox_filter_gtfs
-from transport_performance.gtfs.validation import GtfsInstance
+from transport_performance.gtfs.multi_validation import MultiGtfsInstance
 from transport_performance.osm.osm_utils import filter_osm
 from transport_performance.analyse_network import AnalyseNetwork
 from transport_performance.metrics import transport_performance
@@ -39,7 +37,7 @@ def main():
     general_config = config["general"]
     uc_config = config["urban_centre"]
     pop_config = config["population"]
-    gtfs_config = config["gtfs"]
+    # gtfs_config = config["gtfs"]
     osm_config = config["osm"]
     analyse_net_config = config["analyse_network"]
 
@@ -148,30 +146,21 @@ def main():
     del rp  # removing rp memory alloc
     logger.info("Population pre-processing complete.")
 
-    # clip gtfs to region of interest, setting crs to match the bbox
-    logger.info("Clipping GTFS data to urban centre bounding box.")
-    gtfs_bbox = list(uc_gdf.loc["bbox"].geometry.bounds)
-    gtfs_filtered_path = Path(
-        os.path.join(dirs["interim_gtfs"], "filtered.zip")
-    )
-    bbox_filter_gtfs(
-        in_pth=Path(glob.glob("data/inputs/gtfs/*.zip")[0]),
-        out_pth=gtfs_filtered_path,
-        bbox=gtfs_bbox,
-        units=gtfs_config["units"],
-        crs=uc_gdf.crs.to_string(),
-    )
+    logger.info("Reading GTFS inputs...")
+    gtfs = MultiGtfsInstance("data/inputs/gtfs/*.zip")
 
-    logger.info("Reading filtered GTFS...")
-    gtfs = GtfsInstance(
-        gtfs_pth=gtfs_filtered_path,
-        units=gtfs_config["units"],
-        route_lookup_pth="data/inputs/gtfs/route_lookup.pkl",
+    logger.info("Clipping GTFS data to urban centre bounding box...")
+    gtfs_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
+    gtfs.filter_to_bbox(gtfs_bbox)
+
+    # display min, max, and no unique dates across all GTFS inputs
+    gtfs_dates = set()
+    for inst in gtfs.instances:
+        gtfs_dates.update(inst.feed.get_dates())
+    logger.info(
+        f"{len(gtfs_dates)} dates available between {min(gtfs_dates)} & "
+        f"{max(gtfs_dates)}."
     )
-    available_dates = gtfs.feed.get_dates()
-    s = available_dates[0]
-    f = available_dates[-1]
-    logger.info(f"{len(available_dates)} dates available between {s} & {f}.")
 
     logger.info("Validating filtered GTFS...")
     gtfs.is_valid()
@@ -182,7 +171,7 @@ def main():
     logger.info(f"Pre-cleaning validity data saved: {pre_clean_valid_path}")
 
     logger.info("Cleaning filtered GTFS...")
-    gtfs.clean_feed()
+    gtfs.clean_feeds()
 
     logger.info("Validating filtered GTFS post cleaning...")
     gtfs.is_valid()
@@ -192,40 +181,36 @@ def main():
     gtfs.validity_df.to_csv(post_clean_valid_path, index=False)
     logger.info(f"Post-cleaning validity data saved: {post_clean_valid_path}")
 
-    logger.info("Calulating trips and routes summarys...")
-    route_modes_path = os.path.join(
-        dirs["gtfs_outputs_dir"], "route_modes.csv"
+    post_clean_route_summary_path = os.path.join(
+        dirs["gtfs_outputs_dir"], "post_cleaning_routes_summary.csv"
     )
-    route_modes = gtfs.get_route_modes()
-    route_modes.to_csv(route_modes_path)
-    logger.info(f"Post-cleaning route modes saved: {route_modes_path}")
-    route_summary_path = os.path.join(
-        dirs["gtfs_outputs_dir"], "routes_summary.csv"
+    route_summary = gtfs.summarise_routes(to_days=False)
+    route_summary.to_csv(post_clean_route_summary_path, index=False)
+    logger.info(
+        f"Post-cleaning routes summary saved: {post_clean_route_summary_path}"
     )
-    route_summary = gtfs.summarise_routes(return_summary=False)
-    route_summary.to_csv(route_summary_path)
-    logger.info(f"Post-cleaning routes summary saved: {route_summary_path}")
-    trip_summary_path = os.path.join(
-        dirs["gtfs_outputs_dir"], "trips_summary.csv"
+
+    post_clean_trip_summary_path = os.path.join(
+        dirs["gtfs_outputs_dir"], "post_clean_trips_summary.csv"
     )
-    trip_summary = gtfs.summarise_trips(return_summary=False)
-    trip_summary.to_csv(trip_summary_path)
-    logger.info(f"Post-cleaning trips summary saved: {trip_summary_path}")
+    trip_summary = gtfs.summarise_trips(to_days=False)
+    trip_summary.to_csv(post_clean_trip_summary_path, index=False)
+    logger.info(
+        f"Post-cleaning trips summary saved: {post_clean_trip_summary_path}"
+    )
+
     stops_map_path = os.path.join(dirs["gtfs_outputs_dir"], "stops.html")
-    gtfs.viz_stops(stops_map_path)
+    gtfs.viz_stops(stops_map_path, return_viz=False)
     logger.info(f"Post-cleaning stops map saved: {stops_map_path}")
-    hull_map_path = os.path.join(dirs["gtfs_outputs_dir"], "convex_hull.html")
-    gtfs.viz_stops(hull_map_path, geoms="hull")
-    logger.info(f"Post-cleaning convex hull map saved: {hull_map_path}")
 
     logger.info("Writing cleaned GTFS to file...")
     # TODO: remove this date restriction as it is incorrect, but needed to
     # ensure consistency with previous results
-    gtfs.feed = gk.miscellany.restrict_to_dates(gtfs.feed, ["20231027"])
-    gtfs_filtered_path = Path(
-        os.path.join(dirs["interim_gtfs"], "cleaned.zip")
-    )
-    gtfs.feed.write(gtfs_filtered_path)
+    gtfs.filter_to_date(["20231027"])
+    gtfs.save_feeds(dirs["interim_gtfs"])
+    logger.debug("Removing `gtfs` memory allocation...")
+    del gtfs  # remove gtfs memory alloc
+    logger.info("GTFS processing complete.")
 
     logger.info("Cropping OSM input to urban centre BBOX...")
     osm_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
@@ -241,10 +226,11 @@ def main():
     logger.info("OSM cropping complete.")
 
     logger.info("Building transport network...")
+    gtfs_filtered_paths = glob.glob(f"{dirs['interim_gtfs']}/*.zip")
     an = AnalyseNetwork(
         centroid_gdf,
         filtered_osm_path,
-        [gtfs_filtered_path],
+        gtfs_filtered_paths,
         dirs["an_outputs_dir"],
     )
 

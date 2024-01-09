@@ -25,5 +25,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # copy source code - last step as most frequent change (speeds up re-building)
 COPY ./src /analysis/src/
 
+# TODO: remove this copy stage when MultiGtfsInstance route_lookup.pkl fix in place
+COPY ./data/inputs/gtfs/route_lookup.pkl /usr/local/lib/python3.9/site-packages/transport_performance/data/gtfs/
+
 # run script
 CMD [ "python", "src/run.py" ]
