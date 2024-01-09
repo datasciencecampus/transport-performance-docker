@@ -5,7 +5,7 @@ area_name = "newport"
 area_country = "wales"
 date = "20230808"  # needs to be GTFS type date string-like YYYYMMDD
 max_time = 45   # this is in minutes
-max_distance = 11250  # this is in meters
+max_distance = 11.25  # this is in kilometers
 
 [urban_centre]  # configuration section for urban centre
 bbox = [

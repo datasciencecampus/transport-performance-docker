@@ -4,7 +4,6 @@ import datetime
 import geopandas as gpd
 import glob
 import os
-import pandas as pd
 import toml
 
 from shapely.geometry import box
@@ -19,7 +18,6 @@ from transport_performance.utils.raster import (
     merge_raster_files,
 )
 from r5py import TransportMode
-from pandas.testing import assert_frame_equal
 from pathlib import Path
 
 from utils import create_dir_structure, setup_logger, plot
@@ -55,7 +53,7 @@ def main():
     analyse_net_config = config["analyse_network"]
 
     # create directory structure upfront
-    dirs = create_dir_structure(general_config["area_name"], add_time=False)
+    dirs = create_dir_structure(general_config["area_name"], add_time=True)
 
     logger = setup_logger(
         LOGGER_NAME,
@@ -217,9 +215,7 @@ def main():
     logger.info(f"Post-cleaning stops map saved: {stops_map_path}")
 
     logger.info("Writing cleaned GTFS to file...")
-    # TODO: remove this date restriction as it is incorrect, but needed to
-    # ensure consistency with previous results - set as general_config["date"]
-    gtfs.filter_to_date(["20231027"])
+    gtfs.filter_to_date(general_config["date"])
     gtfs.save_feeds(dirs["interim_gtfs"])
     logger.debug("Removing `gtfs` memory allocation...")
     del gtfs  # remove gtfs memory alloc
@@ -251,7 +247,7 @@ def main():
     analysis_dt = datetime.datetime.strptime(general_config["date"], "%Y%m%d")
     an.od_matrix(
         batch_orig=analyse_net_config["batch_orig"],
-        distance=general_config["max_distance"] / 1000,  # to convert to Km
+        distance=general_config["max_distance"],
         departure=datetime.datetime(
             analysis_dt.year,
             analysis_dt.month,
@@ -271,12 +267,6 @@ def main():
     logger.debug("Removing `an` memory allocation...")
     del an  # remove an memory alloc
     logger.info("Transport network analysis complete.")
-
-    # TODO: remove snippet when generalising
-    df1 = pd.read_parquet(dirs["an_outputs_dir"]).reset_index(drop=True)
-    df2 = pd.read_parquet("data/check/newport_qa.parquet")
-    assert_frame_equal(df1, df2)
-    logger.info("OD matrix is consistent with expected results!")
 
     logger.info("Calculating the transport performance...")
     tp_df, stats_df = transport_performance(
