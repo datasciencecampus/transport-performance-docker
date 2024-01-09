@@ -16,7 +16,10 @@ from transport_performance.gtfs.validation import GtfsInstance
 from transport_performance.osm.osm_utils import filter_osm
 from transport_performance.analyse_network import AnalyseNetwork
 from transport_performance.metrics import transport_performance
-from transport_performance.utils.raster import sum_resample_file
+from transport_performance.utils.raster import (
+    sum_resample_file,
+    merge_raster_files,
+)
 from r5py import TransportMode
 from pandas.testing import assert_frame_equal
 from pathlib import Path
@@ -66,8 +69,20 @@ def main():
         )
         bbox_gdf.to_crs("ESRI:54009", inplace=True)
 
+    # merge input raster files
+    logger.info("Merging input raster files...")
+    merged_uc_file = os.path.join(
+        dirs["interim_uc"], "urban_centre_merged.tif"
+    )
+    merge_raster_files(
+        "data/inputs/urban_centre/",
+        os.path.dirname(merged_uc_file),
+        os.path.basename(merged_uc_file),
+        subset_regex=uc_config["subset_regex"],
+    )
+
     # detect urban centre
-    uc = UrbanCentre(glob.glob("data/inputs/urban_centre/*.tif")[0])
+    uc = UrbanCentre(merged_uc_file)
     uc_gdf = uc.get_urban_centre(
         bbox_gdf,
         centre=tuple(uc_config["centre"]),
@@ -75,6 +90,7 @@ def main():
         buffer_size=uc_config["buffer_size"],
         buffer_estimation_crs=uc_config["buffer_estimation_crs"],
     )
+    del uc  # remove uc memory alloc
 
     # set the index to the label column to make filtering easier
     uc_gdf.set_index("label", inplace=True)

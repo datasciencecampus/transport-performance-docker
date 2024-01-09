@@ -40,6 +40,7 @@ def create_dir_structure(area_name: str, add_time: bool = True) -> dict:
     dirs = {
         "files_dir": files_dir,
         "interim_dir": interim_dir,
+        "interim_uc": os.path.join(interim_dir, "urban_centre"),
         "interim_pop": os.path.join(interim_dir, "population"),
         "interim_gtfs": os.path.join(interim_dir, "gtfs"),
         "interim_osm": os.path.join(interim_dir, "osm"),

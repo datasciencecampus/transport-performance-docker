@@ -16,6 +16,7 @@ centre = [51.5773597, -2.9660008]
 centre_crs = "EPSG:4326"
 buffer_size = 12000
 buffer_estimation_crs = "ESRI:54009"  # change to EPSG:27700 after tests
+subset_regex="GHS_POP_E2020_GLOBE_R2023A_54009_1000_"
 
 [population]  # configuration section for population
 threshold = 1  # set small and positive, to remove 0 pop cells
