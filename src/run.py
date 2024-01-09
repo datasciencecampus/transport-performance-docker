@@ -25,12 +25,13 @@ from utils import create_dir_structure, setup_logger, plot
 
 # set the container logger name
 LOGGER_NAME = "tp-docker-analysis"
+CONFIG_PREFIX = "data/inputs/config/"
 
 
 def main():
     """Execute end-to-end analysis."""
     # read and split out config into separate configs to minimise line lengths
-    config_file = os.getenv("CONFIG_PATH")
+    config_file = os.path.join(CONFIG_PREFIX, os.getenv("CONFIG_FILE"))
     config = toml.load(config_file)
     general_config = config["general"]
     uc_config = config["urban_centre"]
