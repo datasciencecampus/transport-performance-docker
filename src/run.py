@@ -218,7 +218,7 @@ def main():
 
     logger.info("Writing cleaned GTFS to file...")
     # TODO: remove this date restriction as it is incorrect, but needed to
-    # ensure consistency with previous results
+    # ensure consistency with previous results - set as general_config["date"]
     gtfs.filter_to_date(["20231027"])
     gtfs.save_feeds(dirs["interim_gtfs"])
     logger.debug("Removing `gtfs` memory allocation...")
@@ -248,11 +248,12 @@ def main():
     )
 
     logger.info("Calculating OD matrix...")
+    analysis_dt = datetime.datetime.strptime(general_config["date"], "%Y%m%d")
     an.od_matrix(
         departure=datetime.datetime(
-            analyse_net_config["departure_year"],
-            analyse_net_config["departure_month"],
-            analyse_net_config["departure_day"],
+            analysis_dt.year,
+            analysis_dt.month,
+            analysis_dt.day,
             analyse_net_config["departure_hour"],
             analyse_net_config["departure_minute"],
         ),
@@ -265,6 +266,9 @@ def main():
         transport_modes=[TransportMode.TRANSIT],
     )
     logger.info(f"OD matrix written to: {dirs['an_outputs_dir']}")
+    logger.debug("Removing `an` memory allocation...")
+    del an  # remove an memory alloc
+    logger.info("Transport network analysis complete.")
 
     # TODO: remove snippet when generalising
     df1 = pd.read_parquet(dirs["an_outputs_dir"]).reset_index(drop=True)

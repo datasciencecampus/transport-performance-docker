@@ -3,6 +3,7 @@ title = "Config for an E2E example around the Newport area"
 [general]
 area_name = "newport"
 area_country = "wales"
+date = "20230808"  # needs to be GTFS type date string-like YYYYMMDD
 
 [urban_centre]  # configuration section for urban centre
 bbox = [
@@ -29,9 +30,6 @@ units = "km"
 tag_filter = false
 
 [analyse_network]  # configuration for the analyse_network stage
-departure_year = 2023
-departure_month = 8
-departure_day = 8  # this is the date, not the day of the week
 departure_hour = 8
 departure_minute = 0
 departure_time_window = 1  # this is in hours
