@@ -19,6 +19,7 @@ buffer_estimation_crs = "ESRI:54009"  # change to EPSG:27700 after tests
 subset_regex="GHS_POP_E2020_GLOBE_R2023A_54009_1000_"
 
 [population]  # configuration section for population
+subset_regex="GHS_POP_E2020_GLOBE_R2023A_54009_100_"
 threshold = 1  # set small and positive, to remove 0 pop cells
 
 [gtfs] # configuration section for gtfs

@@ -70,7 +70,7 @@ def main():
         bbox_gdf.to_crs("ESRI:54009", inplace=True)
 
     # merge input raster files
-    logger.info("Merging input raster files...")
+    logger.info("Merging input urban centre raster files...")
     merged_uc_file = os.path.join(
         dirs["interim_uc"], "urban_centre_merged.tif"
     )
@@ -90,7 +90,6 @@ def main():
         buffer_size=uc_config["buffer_size"],
         buffer_estimation_crs=uc_config["buffer_estimation_crs"],
     )
-    del uc  # remove uc memory alloc
 
     # set the index to the label column to make filtering easier
     uc_gdf.set_index("label", inplace=True)
@@ -100,15 +99,28 @@ def main():
     uc_output_path = os.path.join(dirs["uc_outputs_dir"], "urban_centre.html")
     m.save(uc_output_path)
     logger.info(f"Saved urban centre map: {uc_output_path}")
+    logger.debug("Removing `uc` memory allocation...")
+    del uc  # remove uc memory alloc
     logger.info("Urban centre detection complete.")
 
+    # merge input population raster files
+    logger.info("Merging input population raster files...")
+    merged_pop_file = os.path.join(
+        dirs["interim_pop"], "population_merged.tif"
+    )
+    merge_raster_files(
+        "data/inputs/population/",
+        os.path.dirname(merged_pop_file),
+        os.path.basename(merged_pop_file),
+        subset_regex=pop_config["subset_regex"],
+    )
+
     logger.info("Resampling population data...")
-    pop_raw_input = glob.glob("data/inputs/population/*.tif")[0]
-    pop_filename = os.path.basename(pop_raw_input).replace(
+    pop_filename = os.path.basename(merged_pop_file).replace(
         ".tif", "_resampled.tif"
     )
     pop_input = os.path.join(dirs["interim_pop"], pop_filename)
-    sum_resample_file(pop_raw_input, pop_input)
+    sum_resample_file(merged_pop_file, pop_input)
 
     # extract geometries from urban centre detection
     logger.info("Pre-process population data using detected urban centre...")
@@ -132,6 +144,8 @@ def main():
         save=plot_output,
     )
     logger.info(f"Saved population map: {plot_output}")
+    logger.debug("Removing `rp` memory allocation...")
+    del rp  # removing rp memory alloc
     logger.info("Population pre-processing complete.")
 
     # clip gtfs to region of interest, setting crs to match the bbox
