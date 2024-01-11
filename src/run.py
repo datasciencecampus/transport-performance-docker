@@ -21,6 +21,7 @@ from transport_performance.utils.raster import (
 from r5py import TransportMode
 from pathlib import Path
 from copy import deepcopy
+from branca import colormap
 
 from utils import create_dir_structure, setup_logger, plot
 
@@ -341,6 +342,12 @@ def main():
     tp_plot_path = os.path.join(
         dirs["metrics_outputs_dir"], "transport_performance.html"
     )
+    tp_plot_const_cmap_path = os.path.join(
+        dirs["metrics_outputs_dir"], "transport_performance_const_cmap.html"
+    )
+    tp_output_path = os.path.join(
+        dirs["metrics_outputs_dir"], "transport_performance.parquet"
+    )
     tp_stats_path = os.path.join(
         dirs["metrics_outputs_dir"], "transport_performance_stats.csv"
     )
@@ -353,9 +360,38 @@ def main():
         caption="Transport Performance (%)",
         save=tp_plot_path,
     )
+    const_cmap = colormap.LinearColormap(
+        colors=[
+            "#440154",
+            "#414487",
+            "#2A788E",
+            "#22A884",
+            "#7AD151",
+            "#FDE725",
+        ],
+        vmin=0,
+        vmax=100,
+        max_labels=11,
+        tick_labels=list(range(0, 110, 10)),
+    )
+    plot(
+        tp_df,
+        column="transport_performance",
+        column_control_name="Transport Performance",
+        uc_gdf=uc_gdf[0:1],
+        cmap=const_cmap,
+        caption="Transport Performance (%)",
+        save=tp_plot_const_cmap_path,
+    )
     stats_df.to_csv(tp_stats_path, index=False)
+    tp_df.to_parquet(tp_output_path, index=False)
     logger.info(f"Transport performance map saved: {tp_plot_path}")
+    logger.info(
+        "Transport performance map (constant cmap) saved: "
+        f"{tp_plot_const_cmap_path}"
+    )
     logger.info(f"Transport performance stats saved: {tp_stats_path}")
+    logger.info(f"Transport performance parquet saved: {tp_output_path}")
 
     logger.info(
         f"*** Transport performance analysis of {general_config['area_name']} "
