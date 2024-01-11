@@ -2,6 +2,7 @@
 
 import datetime
 import geopandas as gpd
+import pandas as pd
 import glob
 import os
 import toml
@@ -239,6 +240,39 @@ def main():
     gtfs.filter_to_date(
         general_config["date"], delete_empty_feeds=gtfs_config["empty_feed"]
     )
+
+    # manually create a synthetic calendar.txt for R5PY to detect valid dates
+    for inst in gtfs.instances:
+        if inst.feed.calendar is None:
+            logger.warning("Creating a synthetic calendar.txt...")
+            # get unique service ids from calendar_dates.txt
+            calendar_df = pd.DataFrame(
+                inst.feed.calendar_dates.service_id.unique(),
+                columns=["service_id"],
+            )
+
+            # set all days to zero - allow calendar_dates to control schedule
+            calendar_df.loc[:, "monday"] = 0
+            calendar_df.loc[:, "tuesday"] = 0
+            calendar_df.loc[:, "wednesday"] = 0
+            calendar_df.loc[:, "thursday"] = 0
+            calendar_df.loc[:, "friday"] = 0
+            calendar_df.loc[:, "saturday"] = 0
+            calendar_df.loc[:, "sunday"] = 0
+
+            # set start/end date to be either side of analysis date
+            date_dt = datetime.datetime.strptime(
+                general_config["date"], "%Y%m%d"
+            )
+            calendar_df.loc[:, "start_date"] = (
+                date_dt - datetime.timedelta(days=1)
+            ).strftime("%Y%m%d")
+            calendar_df.loc[:, "end_date"] = (
+                date_dt + datetime.timedelta(days=1)
+            ).strftime("%Y%m%d")
+
+            inst.feed.calendar = calendar_df
+
     gtfs.save_feeds(dirs["interim_gtfs"])
     logger.debug("Removing `gtfs` memory allocation...")
     del gtfs  # remove gtfs memory alloc
