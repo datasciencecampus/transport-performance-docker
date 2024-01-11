@@ -19,6 +19,7 @@ from transport_performance.utils.raster import (
 )
 from r5py import TransportMode
 from pathlib import Path
+from copy import deepcopy
 
 from utils import create_dir_structure, setup_logger, plot
 
@@ -48,7 +49,7 @@ def main():
     general_config = config["general"]
     uc_config = config["urban_centre"]
     pop_config = config["population"]
-    # gtfs_config = config["gtfs"]
+    gtfs_config = config["gtfs"]
     osm_config = config["osm"]
     analyse_net_config = config["analyse_network"]
 
@@ -162,7 +163,9 @@ def main():
 
     logger.info("Clipping GTFS data to urban centre bounding box...")
     gtfs_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
-    gtfs.filter_to_bbox(gtfs_bbox)
+    gtfs.filter_to_bbox(
+        gtfs_bbox, delete_empty_feeds=gtfs_config["empty_feed"]
+    )
 
     # display min, max, and no unique dates across all GTFS inputs
     gtfs_dates = set()
@@ -174,7 +177,7 @@ def main():
     )
 
     logger.info("Validating filtered GTFS...")
-    gtfs.is_valid()
+    gtfs.is_valid({"far_stops": gtfs_config["fast_travel"]})
     pre_clean_valid_path = os.path.join(
         dirs["gtfs_outputs_dir"], "pre_clean_validity.csv"
     )
@@ -182,43 +185,64 @@ def main():
     logger.info(f"Pre-cleaning validity data saved: {pre_clean_valid_path}")
 
     logger.info("Cleaning filtered GTFS...")
-    gtfs.clean_feeds()
+    gtfs.clean_feeds({"fast_travel": gtfs_config["fast_travel"]})
 
     logger.info("Validating filtered GTFS post cleaning...")
-    gtfs.is_valid()
+    gtfs.is_valid({"far_stops": gtfs_config["fast_travel"]})
     post_clean_valid_path = os.path.join(
         dirs["gtfs_outputs_dir"], "post_clean_validity.csv"
     )
     gtfs.validity_df.to_csv(post_clean_valid_path, index=False)
     logger.info(f"Post-cleaning validity data saved: {post_clean_valid_path}")
 
-    post_clean_route_summary_path = os.path.join(
-        dirs["gtfs_outputs_dir"], "post_cleaning_routes_summary.csv"
-    )
-    route_summary = gtfs.summarise_routes(to_days=False)
-    route_summary.to_csv(post_clean_route_summary_path, index=False)
-    logger.info(
-        f"Post-cleaning routes summary saved: {post_clean_route_summary_path}"
-    )
+    if gtfs_config["calculate_summaries"]:
+        post_clean_route_summary_path = os.path.join(
+            dirs["gtfs_outputs_dir"], "post_cleaning_routes_summary.csv"
+        )
+        route_summary = gtfs.summarise_routes(to_days=False)
+        route_summary.to_csv(post_clean_route_summary_path, index=False)
+        logger.info(
+            "Post-cleaning routes summary saved: "
+            f"{post_clean_route_summary_path}"
+        )
 
-    post_clean_trip_summary_path = os.path.join(
-        dirs["gtfs_outputs_dir"], "post_clean_trips_summary.csv"
-    )
-    trip_summary = gtfs.summarise_trips(to_days=False)
-    trip_summary.to_csv(post_clean_trip_summary_path, index=False)
-    logger.info(
-        f"Post-cleaning trips summary saved: {post_clean_trip_summary_path}"
-    )
+        post_clean_trip_summary_path = os.path.join(
+            dirs["gtfs_outputs_dir"], "post_clean_trips_summary.csv"
+        )
+        trip_summary = gtfs.summarise_trips(to_days=False)
+        trip_summary.to_csv(post_clean_trip_summary_path, index=False)
+        logger.info(
+            "Post-cleaning trips summary saved: "
+            f"{post_clean_trip_summary_path}"
+        )
+    else:
+        logger.warning(
+            "`calculate summaries` in config toml is False, therefore route/"
+            "trip summaries were skipped."
+        )
+
+    # TODO: remove when fix is implemented
+    # some GTFS do not have stop_code (optional column in GTFS) and this limits
+    # `viz_stop`. This creates a dummy `stop_code` column that duplicates the
+    # `stop_id` data for the purposes of plotting. Create a copy to prevent
+    # working on the original (prevents saving edited data later)
+    viz_gtfs = deepcopy(gtfs)
+    for inst in viz_gtfs.instances:
+        if "stop_code" not in inst.feed.stops.columns:
+            inst.feed.stops["stop_code"] = inst.feed.stops["stop_id"]
 
     stops_map_path = os.path.join(dirs["gtfs_outputs_dir"], "stops.html")
-    gtfs.viz_stops(stops_map_path, return_viz=False)
+    viz_gtfs.viz_stops(stops_map_path, return_viz=False)
     logger.info(f"Post-cleaning stops map saved: {stops_map_path}")
 
     logger.info("Writing cleaned GTFS to file...")
-    gtfs.filter_to_date(general_config["date"])
+    gtfs.filter_to_date(
+        general_config["date"], delete_empty_feeds=gtfs_config["empty_feed"]
+    )
     gtfs.save_feeds(dirs["interim_gtfs"])
     logger.debug("Removing `gtfs` memory allocation...")
     del gtfs  # remove gtfs memory alloc
+    del viz_gtfs  # remove viz_gtfs alloc TODO: remove when fix is implemented
     logger.info("GTFS processing complete.")
 
     logger.info("Cropping OSM input to urban centre BBOX...")
