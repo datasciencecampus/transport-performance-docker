@@ -26,7 +26,9 @@ subset_regex="GHS_POP_E2020_GLOBE_R2023A_54009_100_"
 threshold = 1  # set small and positive, to remove 0 pop cells
 
 [gtfs] # configuration section for gtfs
-units = "km"
+empty_feed = false
+fast_travel = true
+calculate_summaries = true
 
 [osm] # configuration section for osm clipping
 tag_filter = false
