@@ -108,9 +108,14 @@ def main():
 
     # visualise outputs
     m = uc_gdf[::-1].reset_index().explore("label", cmap="viridis")
-    uc_output_path = os.path.join(dirs["uc_outputs_dir"], "urban_centre.html")
-    m.save(uc_output_path)
-    logger.info(f"Saved urban centre map: {uc_output_path}")
+    uc_map_path = os.path.join(dirs["uc_outputs_dir"], "urban_centre.html")
+    m.save(uc_map_path)
+    logger.info(f"Saved urban centre map: {uc_map_path}")
+
+    uc_output_path = os.path.join(dirs["uc_outputs_dir"], "uc_gdf.parquet")
+    uc_gdf.to_parquet(uc_output_path, index=False)
+    logger.info(f"Saved urban centre output to parquet: {uc_output_path}")
+
     logger.debug("Removing `uc` memory allocation...")
     del uc  # remove uc memory alloc
     logger.info("Urban centre detection complete.")
@@ -156,6 +161,21 @@ def main():
         save=plot_output,
     )
     logger.info(f"Saved population map: {plot_output}")
+
+    pop_outputs_centroids = os.path.join(
+        dirs["pop_outputs_dir"], "pop_centroid.parquet"
+    )
+    rp.centroid_gdf.to_parquet(pop_outputs_centroids, index=False)
+    logger.info(
+        f"Saved population centroids to parquet: {pop_outputs_centroids}"
+    )
+
+    pop_outputs_gdf = os.path.join(
+        dirs["pop_outputs_dir"], "pop_centroid.parquet"
+    )
+    rp.pop_gdf.to_parquet(pop_outputs_gdf, index=False)
+    logger.info(f"Save population gdf to parquet: {pop_outputs_gdf}")
+
     logger.debug("Removing `rp` memory allocation...")
     del rp  # removing rp memory alloc
     logger.info("Population pre-processing complete.")
