@@ -7,6 +7,7 @@ import toml
 from pyprojroot import here
 from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
+from datetime import datetime
 
 from transport_performance.utils.raster import (
     merge_raster_files,
@@ -60,13 +61,20 @@ def main():
 
     # detect urban centre
     uc = UrbanCentre(merged_uc_file)
-    uc_gdf = uc.get_urban_centre(
-        bbox_gdf,
-        centre=tuple(centre),
-        centre_crs=centre_crs,
-        buffer_size=config['urban_centre']['buffer_size'],
-        buffer_estimation_crs=config['urban_centre']['buffer_estimation_crs'],
-    )
+    try:
+        uc_gdf = uc.get_urban_centre(
+            bbox_gdf,
+            centre=tuple(centre),
+            centre_crs=centre_crs,
+            buffer_size=config['urban_centre']['buffer_size'],
+            buffer_estimation_crs=(
+                config['urban_centre']['buffer_estimation_crs']
+            ),
+        )
+    except:
+        logger.info("Urban centre creation failed")
+        logger.exception("message")
+        return None
 
     # set the index to the label column to make filtering easier
     uc_gdf.set_index("label", inplace=True)
