@@ -24,7 +24,11 @@ config = toml.load(here('data/inputs/config/default_config.toml'))
 
 def main():
     """Find urban centres."""
-    area_name = os.getenv("AREA_NAME"),
+    area_name = os.getenv("AREA_NAME")
+    bbox = [float(x) for x in os.getenv("BBOX").split(',')]
+    bbox_crs = os.getenv("BBOX_CRS")
+    centre = [float(x) for x in os.getenv("CENTRE").split(',')]
+    centre_crs = os.getenv("CENTRE_CRS")
 
     logger = setup_logger(
         LOGGER_NAME,
@@ -32,19 +36,18 @@ def main():
     )
     logger.info(f"Detecting urban centre of {area_name}")
 
-    bbox = [float(x) for x in os.getenv("BBOX").split(',')],
-    bbox_crs = os.getenv("BBOX_CRS"),
-    centre = [float(x) for x in os.getenv("CENTRE").split(',')],
-    centre_crs = os.getenv("CENTRE_CRS")
-
     # put bbox into a geopandas dataframe for `get_urban_centre` input
     bbox_gdf = gpd.GeoDataFrame(
         geometry=[box(*bbox)], crs=bbox_crs
     )
     if bbox_crs != "ESRI:54009":
+        logger.info(
+            f"Convering bbox_gdf from {bbox_crs} to 'ESRI:54009'"
+        )
         bbox_gdf.to_crs("ESRI:54009", inplace=True)
 
     # merge input raster files
+    logger.info("Merging input urban centre raster files...")
     merged_uc_file = os.path.join(
         here("data/urban_centre_merged.tif")
     )
@@ -72,9 +75,13 @@ def main():
     m = uc_gdf[::-1].reset_index().explore("label", cmap="viridis")
     uc_map_path = here(f"data/ucs/{area_name}_urban_centre.html")
     m.save(uc_map_path)
+    logger.info(f"Saved urban centre map: {uc_map_path}")
 
     uc_output_path = here(f"data/ucs/{area_name}_uc_gdf.parquet")
     uc_gdf.to_parquet(uc_output_path, index=False)
+    logger.info(f"Saved urban centre output to parquet: {uc_output_path}")
+
+    logger.info("Urban centre detection complete.")
 
 
 if __name__ == "__main__":

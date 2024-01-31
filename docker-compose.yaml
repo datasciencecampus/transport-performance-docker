@@ -4,5 +4,10 @@ services:
     image: transport-performance:latest
     environment:
       - CONFIG_FILE=${CONFIG_FILE:-default_config.toml}
+      - AREA_NAME=${AREA_NAME:-None}
+      - BBOX=${BBOX:-None}
+      - BBOX_CRS=${BBOX_CRS:-None}
+      - CENTRE=${CENTRE:-None}
+      - CENTRE_CRS=${CENTRE_CRS:-None}
     volumes:
       - ./data:/analysis/data/
