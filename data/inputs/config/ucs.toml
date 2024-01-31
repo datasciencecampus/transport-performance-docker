@@ -1,0 +1,25 @@
+[manchester]
+area_name = "manchester"
+area_country = "england"
+bbox = [
+    -2.9061,
+    53.0723,
+    -1.5108,
+    53.8376
+]
+bbox_crs = "EPSG: 4326"
+centre = [53.4901779140037, -2.2324148862360778]
+centre_crs = "EPSG:4326"
+
+[liverpool]
+area_name = "liverpool"
+area_country = "england"
+bbox = [
+    -3.6818,
+    53.0202,
+    -2.2866,
+    53.7865
+]
+bbox_crs = "EPSG: 4326"
+centre = [53.40562178617905, -2.9813298622510875]
+centre_crs = "EPSG:4326"
