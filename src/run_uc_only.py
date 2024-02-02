@@ -7,7 +7,6 @@ import toml
 from pyprojroot import here
 from shapely.geometry import box
 from transport_performance.urban_centres.raster_uc import UrbanCentre
-from datetime import datetime
 
 from transport_performance.utils.raster import (
     merge_raster_files,
@@ -71,7 +70,7 @@ def main():
                 config['urban_centre']['buffer_estimation_crs']
             ),
         )
-    except:
+    except Exception:
         logger.info("Urban centre creation failed")
         logger.exception("message")
         return None
