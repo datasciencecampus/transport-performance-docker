@@ -14,9 +14,6 @@ subset_regex="GHS_POP_E2020_GLOBE_R2023A_54009_100_"
 threshold = 1  # set small and positive, to remove 0 pop cells
 
 [gtfs] # configuration section for gtfs
-empty_feed = false
-fast_travel = true
-calculate_summaries = true
 
 [osm] # configuration section for osm clipping
 tag_filter = false
@@ -25,6 +22,5 @@ tag_filter = false
 departure_hour = 8
 departure_minute = 0
 departure_time_window = 1  # this is in hours
-batch_orig = false
 
 [metrics]  # configuration for the metrics stage
