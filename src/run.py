@@ -51,16 +51,16 @@ def main():
     general_config = config["general"]
     uc_config = config["urban_centre"]
     pop_config = config["population"]
-    gtfs_config = config["gtfs"]
+    # gtfs_config = config["gtfs"]
     osm_config = config["osm"]
     analyse_net_config = config["analyse_network"]
 
     # get environmental variables
     country_name = os.getenv("COUNTRY_NAME").capitalize()
     area_name = os.getenv("AREA_NAME").capitalize()
-    bbox = [float(x) for x in os.getenv("BBOX").split(',')]
+    bbox = [float(x) for x in os.getenv("BBOX").split(",")]
     bbox_crs = os.getenv("BBOX_CRS")
-    centre = [float(x) for x in os.getenv("CENTRE").split(',')]
+    centre = [float(x) for x in os.getenv("CENTRE").split(",")]
     centre_crs = os.getenv("CENTRE_CRS")
     empty_feed = bool(int(os.getenv("EMPTY_FEED")))
     fast_travel = bool(int(os.getenv("FAST_TRAVEL")))
@@ -76,9 +76,7 @@ def main():
             dirs["logger_dir"], f"{area_name}_analysis.txt"
         ),
     )
-    logger.info(
-        f"Analysing transport performane of {area_name}"
-    )
+    logger.info(f"Analysing transport performane of {area_name}")
     logger.info(f"Created analysis directory structure at {dirs['files_dir']}")
     logger.info(f"Using config file: {config_file}")
     logger.info(f"Using area_name: {country_name}")
@@ -96,9 +94,7 @@ def main():
     # put bbox into a geopandas dataframe for `get_urban_centre` input
     bbox_gdf = gpd.GeoDataFrame(geometry=[box(*bbox)], crs=bbox_crs)
     if bbox_crs != "ESRI:54009":
-        logger.info(
-            f"Convering bbox_gdf from {bbox_crs} to 'ESRI:54009'"
-        )
+        logger.info(f"Convering bbox_gdf from {bbox_crs} to 'ESRI:54009'")
         bbox_gdf.to_crs("ESRI:54009", inplace=True)
 
     # merge input raster files
@@ -205,9 +201,7 @@ def main():
 
     logger.info("Clipping GTFS data to urban centre bounding box...")
     gtfs_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
-    gtfs.filter_to_bbox(
-        gtfs_bbox, delete_empty_feeds=empty_feed
-    )
+    gtfs.filter_to_bbox(gtfs_bbox, delete_empty_feeds=empty_feed)
 
     # display min, max, and no unique dates across all GTFS inputs
     gtfs_dates = set()
@@ -278,10 +272,7 @@ def main():
     logger.info(f"Post-cleaning stops map saved: {stops_map_path}")
 
     logger.info("Writing cleaned GTFS to file...")
-    gtfs.filter_to_date(
-        general_config["date"], 
-        delete_empty_feeds=empty_feed
-    )
+    gtfs.filter_to_date(general_config["date"], delete_empty_feeds=empty_feed)
 
     # manually create a synthetic calendar.txt for R5PY to detect valid dates
     for inst in gtfs.instances:
@@ -435,8 +426,7 @@ def main():
     logger.info(f"Transport performance parquet saved: {tp_output_path}")
 
     logger.info(
-        f"*** Transport performance analysis of {area_name} "
-        "complete! ***"
+        f"*** Transport performance analysis of {area_name} " "complete! ***"
     )
 
 
