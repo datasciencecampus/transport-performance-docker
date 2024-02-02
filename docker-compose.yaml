@@ -10,9 +10,9 @@ services:
       - BBOX_CRS=${BBOX_CRS:-None}
       - CENTRE=${CENTRE:-None}
       - CENTRE_CRS=${CENTRE_CRS:-None}
-      - EMPTY_FEED=${EMPTY_FEED:-false}
-      - FAST_TRAVEL=${FAST_TRAVEL:-true}
-      - CALCULATE_SUMMARIES=${CALCULATE_SUMMARIES:-true}
-      - BATCH_ORIG=${BATCH_ORIG:-false}
+      - EMPTY_FEED=${EMPTY_FEED:-0}
+      - FAST_TRAVEL=${FAST_TRAVEL:-1}
+      - CALCULATE_SUMMARIES=${CALCULATE_SUMMARIES:-1}
+      - BATCH_ORIG=${BATCH_ORIG:-0}
     volumes:
       - ./data:/analysis/data/

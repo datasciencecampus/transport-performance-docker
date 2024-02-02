@@ -55,30 +55,49 @@ def main():
     osm_config = config["osm"]
     analyse_net_config = config["analyse_network"]
 
+    # get environmental variables
+    country_name = os.getenv("COUNTRY_NAME").capitalize()
+    area_name = os.getenv("AREA_NAME").capitalize()
+    bbox = [float(x) for x in os.getenv("BBOX").split(',')]
+    bbox_crs = os.getenv("BBOX_CRS")
+    centre = [float(x) for x in os.getenv("CENTRE").split(',')]
+    centre_crs = os.getenv("CENTRE_CRS")
+    empty_feed = bool(int(os.getenv("EMPTY_FEED")))
+    fast_travel = bool(int(os.getenv("FAST_TRAVEL")))
+    calculate_summaries = bool(int(os.getenv("CALCULATE_SUMMARIES")))
+    batch_orig = bool(int(os.getenv("BATCH_ORIG")))
+
     # create directory structure upfront
-    dirs = create_dir_structure(os.getenv('AREA_NAME'), add_time=True)
+    dirs = create_dir_structure(area_name, add_time=True)
 
     logger = setup_logger(
         LOGGER_NAME,
         file_name=os.path.join(
-            dirs["logger_dir"], f"{os.getenv('AREA_NAME')}_analysis.txt"
+            dirs["logger_dir"], f"{area_name}_analysis.txt"
         ),
     )
     logger.info(
-        f"Analysing transport performane of {os.getenv('AREA_NAME')}"
+        f"Analysing transport performane of {area_name}"
     )
     logger.info(f"Created analysis directory structure at {dirs['files_dir']}")
-    logger.info(f"Using config file {config_file}")
+    logger.info(f"Using config file: {config_file}")
+    logger.info(f"Using area_name: {country_name}")
+    logger.info(f"Using area_name: {area_name}")
+    logger.info(f"Using bbox: {bbox}")
+    logger.info(f"Using bbox_crs: {bbox_crs}")
+    logger.info(f"Using centre: {centre}")
+    logger.info(f"Using centre_crs: {centre_crs}")
+    logger.info(f"Using empty_feed: {empty_feed}")
+    logger.info(f"Using fast_travel: {fast_travel}")
+    logger.info(f"Using calculate_summaries: {calculate_summaries}")
+    logger.info(f"Using batch_orig: {batch_orig}")
 
     logger.info("Detecting urban centre...")
     # put bbox into a geopandas dataframe for `get_urban_centre` input
-    bbox = [float(x) for x in os.getenv("BBOX").split(',')]
-    bbox_gdf = gpd.GeoDataFrame(
-        geometry=[box(*bbox)], crs=os.getenv("BBOX_CRS")
-    )
-    if os.getenv("BBOX_CRS") != "ESRI:54009":
+    bbox_gdf = gpd.GeoDataFrame(geometry=[box(*bbox)], crs=bbox_crs)
+    if bbox_crs != "ESRI:54009":
         logger.info(
-            f"Convering bbox_gdf from {os.getenv('BBOX_CRS')} to 'ESRI:54009'"
+            f"Convering bbox_gdf from {bbox_crs} to 'ESRI:54009'"
         )
         bbox_gdf.to_crs("ESRI:54009", inplace=True)
 
@@ -95,13 +114,11 @@ def main():
     )
 
     # detect urban centre
-    centre = [float(x) for x in os.getenv("CENTRE").split(',')]
-
     uc = UrbanCentre(merged_uc_file)
     uc_gdf = uc.get_urban_centre(
         bbox_gdf,
         centre=tuple(centre),
-        centre_crs=os.getenv("CENTRE_CRS"),
+        centre_crs=centre_crs,
         buffer_size=uc_config["buffer_size"],
         buffer_estimation_crs=uc_config["buffer_estimation_crs"],
     )
@@ -189,7 +206,7 @@ def main():
     logger.info("Clipping GTFS data to urban centre bounding box...")
     gtfs_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
     gtfs.filter_to_bbox(
-        gtfs_bbox, delete_empty_feeds=os.getenv("EMPTY_FEED")
+        gtfs_bbox, delete_empty_feeds=empty_feed
     )
 
     # display min, max, and no unique dates across all GTFS inputs
@@ -202,7 +219,7 @@ def main():
     )
 
     logger.info("Validating filtered GTFS...")
-    gtfs.is_valid({"far_stops": os.getenv("FAST_TRAVEL")})
+    gtfs.is_valid({"far_stops": fast_travel})
     pre_clean_valid_path = os.path.join(
         dirs["gtfs_outputs_dir"], "pre_clean_validity.csv"
     )
@@ -210,17 +227,17 @@ def main():
     logger.info(f"Pre-cleaning validity data saved: {pre_clean_valid_path}")
 
     logger.info("Cleaning filtered GTFS...")
-    gtfs.clean_feeds({"fast_travel": os.getenv("FAST_TRAVEL")})
+    gtfs.clean_feeds({"fast_travel": fast_travel})
 
     logger.info("Validating filtered GTFS post cleaning...")
-    gtfs.is_valid({"far_stops": os.getenv("FAST_TRAVEL")})
+    gtfs.is_valid({"far_stops": fast_travel})
     post_clean_valid_path = os.path.join(
         dirs["gtfs_outputs_dir"], "post_clean_validity.csv"
     )
     gtfs.validity_df.to_csv(post_clean_valid_path, index=False)
     logger.info(f"Post-cleaning validity data saved: {post_clean_valid_path}")
 
-    if os.getenv("CALCULATE_SUMMARIES"):
+    if calculate_summaries:
         post_clean_route_summary_path = os.path.join(
             dirs["gtfs_outputs_dir"], "post_cleaning_routes_summary.csv"
         )
@@ -262,7 +279,8 @@ def main():
 
     logger.info("Writing cleaned GTFS to file...")
     gtfs.filter_to_date(
-        general_config["date"], delete_empty_feeds=os.getenv("EMPTY_FEED")
+        general_config["date"], 
+        delete_empty_feeds=empty_feed
     )
 
     # manually create a synthetic calendar.txt for R5PY to detect valid dates
@@ -328,7 +346,7 @@ def main():
     logger.info("Calculating OD matrix...")
     analysis_dt = datetime.datetime.strptime(general_config["date"], "%Y%m%d")
     an.od_matrix(
-        batch_orig=os.getenv("BATCH_ORIG"),
+        batch_orig=batch_orig,
         distance=general_config["max_distance"],
         departure=datetime.datetime(
             analysis_dt.year,
@@ -357,8 +375,8 @@ def main():
         pop_gdf,
         travel_time_threshold=general_config["max_time"],
         distance_threshold=general_config["max_distance"],
-        urban_centre_name=os.getenv('AREA_NAME').capitalize(),
-        urban_centre_country=os.getenv('COUNTRY_NAME').capitalize(),
+        urban_centre_name=area_name,
+        urban_centre_country=country_name,
         urban_centre_gdf=uc_gdf.reset_index(),
     )
     logger.info("Transport performance calculated. Saving output files...")
@@ -417,7 +435,7 @@ def main():
     logger.info(f"Transport performance parquet saved: {tp_output_path}")
 
     logger.info(
-        f"*** Transport performance analysis of {os.getenv('AREA_NAME')} "
+        f"*** Transport performance analysis of {area_name} "
         "complete! ***"
     )
 
