@@ -4,6 +4,7 @@ services:
     image: transport-performance:latest
     environment:
       - CONFIG_FILE=${CONFIG_FILE:-default_config.toml}
+      - COUNTRY_NAME=${COUNTRY_NAME:-None}
       - AREA_NAME=${AREA_NAME:-None}
       - BBOX=${BBOX:-None}
       - BBOX_CRS=${BBOX_CRS:-None}
