@@ -56,28 +56,29 @@ def main():
     analyse_net_config = config["analyse_network"]
 
     # create directory structure upfront
-    dirs = create_dir_structure(general_config["area_name"], add_time=True)
+    dirs = create_dir_structure(os.getenv('AREA_NAME'), add_time=True)
 
     logger = setup_logger(
         LOGGER_NAME,
         file_name=os.path.join(
-            dirs["logger_dir"], f"{general_config['area_name']}_analysis.txt"
+            dirs["logger_dir"], f"{os.getenv('AREA_NAME')}_analysis.txt"
         ),
     )
     logger.info(
-        f"Analysing transport performane of {general_config['area_name']}"
+        f"Analysing transport performane of {os.getenv('AREA_NAME')}"
     )
     logger.info(f"Created analysis directory structure at {dirs['files_dir']}")
     logger.info(f"Using config file {config_file}")
 
     logger.info("Detecting urban centre...")
     # put bbox into a geopandas dataframe for `get_urban_centre` input
+    bbox = [float(x) for x in os.getenv("BBOX").split(',')]
     bbox_gdf = gpd.GeoDataFrame(
-        geometry=[box(*uc_config["bbox"])], crs=uc_config["bbox_crs"]
+        geometry=[box(*uc_config[bbox])], crs=os.getenv("BBOX_CRS")
     )
-    if uc_config["bbox_crs"] != "ESRI:54009":
+    if os.getenv("BBOX_CRS") != "ESRI:54009":
         logger.info(
-            f"Convering bbox_gdf from {uc_config['bbox_crs']} to 'ESRI:54009'"
+            f"Convering bbox_gdf from {os.getenv('BBOX_CRS')} to 'ESRI:54009'"
         )
         bbox_gdf.to_crs("ESRI:54009", inplace=True)
 
@@ -94,11 +95,13 @@ def main():
     )
 
     # detect urban centre
+    centre = [float(x) for x in os.getenv("CENTRE").split(',')]
+
     uc = UrbanCentre(merged_uc_file)
     uc_gdf = uc.get_urban_centre(
         bbox_gdf,
-        centre=tuple(uc_config["centre"]),
-        centre_crs=uc_config["centre_crs"],
+        centre=tuple(centre),
+        centre_crs=os.getenv("CENTRE_CRS"),
         buffer_size=uc_config["buffer_size"],
         buffer_estimation_crs=uc_config["buffer_estimation_crs"],
     )
@@ -186,7 +189,7 @@ def main():
     logger.info("Clipping GTFS data to urban centre bounding box...")
     gtfs_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
     gtfs.filter_to_bbox(
-        gtfs_bbox, delete_empty_feeds=gtfs_config["empty_feed"]
+        gtfs_bbox, delete_empty_feeds=os.getenv("EMPTY_FEED")
     )
 
     # display min, max, and no unique dates across all GTFS inputs
@@ -199,7 +202,7 @@ def main():
     )
 
     logger.info("Validating filtered GTFS...")
-    gtfs.is_valid({"far_stops": gtfs_config["fast_travel"]})
+    gtfs.is_valid({"far_stops": os.getenv("FAST_TRAVEL")})
     pre_clean_valid_path = os.path.join(
         dirs["gtfs_outputs_dir"], "pre_clean_validity.csv"
     )
@@ -207,17 +210,17 @@ def main():
     logger.info(f"Pre-cleaning validity data saved: {pre_clean_valid_path}")
 
     logger.info("Cleaning filtered GTFS...")
-    gtfs.clean_feeds({"fast_travel": gtfs_config["fast_travel"]})
+    gtfs.clean_feeds({"fast_travel": os.getenv("FAST_TRAVEL")})
 
     logger.info("Validating filtered GTFS post cleaning...")
-    gtfs.is_valid({"far_stops": gtfs_config["fast_travel"]})
+    gtfs.is_valid({"far_stops": os.getenv("FAST_TRAVEL")})
     post_clean_valid_path = os.path.join(
         dirs["gtfs_outputs_dir"], "post_clean_validity.csv"
     )
     gtfs.validity_df.to_csv(post_clean_valid_path, index=False)
     logger.info(f"Post-cleaning validity data saved: {post_clean_valid_path}")
 
-    if gtfs_config["calculate_summaries"]:
+    if os.getenv("CALCULATE_SUMMARIES"):
         post_clean_route_summary_path = os.path.join(
             dirs["gtfs_outputs_dir"], "post_cleaning_routes_summary.csv"
         )
@@ -259,7 +262,7 @@ def main():
 
     logger.info("Writing cleaned GTFS to file...")
     gtfs.filter_to_date(
-        general_config["date"], delete_empty_feeds=gtfs_config["empty_feed"]
+        general_config["date"], delete_empty_feeds=os.getenv("EMPTY_FEED")
     )
 
     # manually create a synthetic calendar.txt for R5PY to detect valid dates
@@ -325,7 +328,7 @@ def main():
     logger.info("Calculating OD matrix...")
     analysis_dt = datetime.datetime.strptime(general_config["date"], "%Y%m%d")
     an.od_matrix(
-        batch_orig=analyse_net_config["batch_orig"],
+        batch_orig=os.getenv("BATCH_ORIG"),
         distance=general_config["max_distance"],
         departure=datetime.datetime(
             analysis_dt.year,
@@ -354,8 +357,8 @@ def main():
         pop_gdf,
         travel_time_threshold=general_config["max_time"],
         distance_threshold=general_config["max_distance"],
-        urban_centre_name=general_config["area_name"].capitalize(),
-        urban_centre_country=general_config["area_country"].capitalize(),
+        urban_centre_name=os.getenv('AREA_NAME').capitalize(),
+        urban_centre_country=os.getenv('COUNTRY_NAME').capitalize(),
         urban_centre_gdf=uc_gdf.reset_index(),
     )
     logger.info("Transport performance calculated. Saving output files...")
@@ -414,7 +417,7 @@ def main():
     logger.info(f"Transport performance parquet saved: {tp_output_path}")
 
     logger.info(
-        f"*** Transport performance analysis of {general_config['area_name']} "
+        f"*** Transport performance analysis of {os.getenv('AREA_NAME')} "
         "complete! ***"
     )
 
