@@ -74,7 +74,7 @@ def main():
     # put bbox into a geopandas dataframe for `get_urban_centre` input
     bbox = [float(x) for x in os.getenv("BBOX").split(',')]
     bbox_gdf = gpd.GeoDataFrame(
-        geometry=[box(*uc_config[bbox])], crs=os.getenv("BBOX_CRS")
+        geometry=[box(*bbox)], crs=os.getenv("BBOX_CRS")
     )
     if os.getenv("BBOX_CRS") != "ESRI:54009":
         logger.info(
