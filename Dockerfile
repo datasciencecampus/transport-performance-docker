@@ -29,4 +29,4 @@ COPY ./src /analysis/src/
 COPY ./data/inputs/gtfs/route_lookup.pkl /usr/local/lib/python3.9/site-packages/transport_performance/data/gtfs/
 
 # run script
-CMD [ "python", "src/run_uc_only.py" ]
+CMD [ "python", "src/run.py" ]
