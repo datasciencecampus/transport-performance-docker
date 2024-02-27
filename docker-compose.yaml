@@ -7,9 +7,9 @@ services:
       - COUNTRY_NAME=${COUNTRY_NAME:-None}
       - AREA_NAME=${AREA_NAME:-None}
       - BBOX=${BBOX:-None}
-      - BBOX_CRS=${BBOX_CRS:-None}
+      - BBOX_CRS=${BBOX_CRS:-EPSG:4326}
       - CENTRE=${CENTRE:-None}
-      - CENTRE_CRS=${CENTRE_CRS:-None}
+      - CENTRE_CRS=${CENTRE_CRS:-EPSG:4326}
       - BUFFER_ESTIMATION_CRS=${BUFFER_ESTIMATION_CRS:-EPSG:27700}
       - EMPTY_FEED=${EMPTY_FEED:-0}
       - FAST_TRAVEL=${FAST_TRAVEL:-1}
