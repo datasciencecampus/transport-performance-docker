@@ -321,3 +321,45 @@ def env_var_none_defence(env_var: str, var_name: str) -> None:
     """
     if (env_var is None) or (env_var == "None") or (env_var == ""):
         raise ValueError(f"{var_name} is a required environment variable.")
+
+
+def gtfs_osm_subdir_name(country_name: str, gtfs_osm_subdir: str) -> str:
+    """Set up the gtfs_osm_subdir variable.
+
+    If default case (where GTFS_OSM_SUBDIR env var is not set), the will use
+    the COUNTRY_NAME env var. Else, will use the GTFS_OSM_SUBDIR env var value.
+    In both cases, OSM and GTFS sub folder existences are checked.
+
+    Parameters
+    ----------
+    country_name : str
+        value of COUNTRY_NAME env var.
+    gtfs_osm_subdir : str
+        value of GTFS_OSM_SUBDIR env var.
+
+    Returns
+    -------
+    str
+        value to use for gtfs_osm_subdir variable.
+
+    """
+    if (
+        (gtfs_osm_subdir is None)
+        or (gtfs_osm_subdir == "None")
+        or (gtfs_osm_subdir == "")
+    ):
+        _gtfs_osm_dir_check(country_name)
+        return country_name
+    else:
+        _gtfs_osm_dir_check(gtfs_osm_subdir)
+        return gtfs_osm_subdir
+
+
+def _gtfs_osm_dir_check(subdir: str):
+    """Check if a OSM and GTFS subdirectory exists."""
+    osm_check = os.path.join("./data/inputs/", subdir, "osm")
+    gtfs_check = os.path.join("./data/inputs/", subdir, "gtfs")
+    if not os.path.exists(osm_check):
+        raise FileNotFoundError(f"{osm_check} does not exist.")
+    elif not os.path.exists(gtfs_check):
+        raise FileNotFoundError(f"{gtfs_check} does not exist.")

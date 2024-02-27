@@ -15,5 +15,6 @@ services:
       - FAST_TRAVEL=${FAST_TRAVEL:-1}
       - CALCULATE_SUMMARIES=${CALCULATE_SUMMARIES:-1}
       - BATCH_ORIG=${BATCH_ORIG:-0}
+      - GTFS_OSM_SUBDIR=${GTFS_OSM_SUBDIR:-None}
     volumes:
       - ./data:/analysis/data/

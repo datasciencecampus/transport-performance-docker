@@ -28,6 +28,7 @@ from utils import (
     setup_logger,
     plot,
     env_var_none_defence,
+    gtfs_osm_subdir_name,
 )
 
 # set the container logger name
@@ -37,19 +38,6 @@ CONFIG_PREFIX = "data/inputs/config/"
 
 def main():
     """Execute end-to-end analysis."""
-    # immediate error handling (to fail fast)
-    # TODO: add in other immediate input error handling
-    osm_file = glob.glob("data/inputs/osm/*.pbf")
-    if len(osm_file) == 0:
-        raise FileNotFoundError("No OSM input data found.")
-    elif len(osm_file) > 1:
-        raise ValueError(
-            "Too many OSM files in input folder. Unable to determine correct "
-            "input. Remove unnecessary inputs from this directory."
-        )
-    else:
-        osm_file = Path(osm_file[0])
-
     # read and split out config into separate configs to minimise line lengths
     config_file = os.path.join(CONFIG_PREFIX, os.getenv("CONFIG_FILE"))
     config = toml.load(config_file)
@@ -71,12 +59,29 @@ def main():
     fast_travel = bool(int(os.getenv("FAST_TRAVEL")))
     calculate_summaries = bool(int(os.getenv("CALCULATE_SUMMARIES")))
     batch_orig = bool(int(os.getenv("BATCH_ORIG")))
+    gtfs_osm_subdir = os.getenv("GTFS_OSM_SUBDIR")
 
     # check required env vars are not None
     env_var_none_defence(country_name, "COUNTRY_NAME")
     env_var_none_defence(area_name, "AREA_NAME")
     env_var_none_defence(bbox, "BBOX")
     env_var_none_defence(centre, "CENTRE")
+
+    # correct the gtfs osm sub directory
+    gtfs_osm_subdir = gtfs_osm_subdir_name(country_name, gtfs_osm_subdir)
+
+    # immediate error handling (to fail fast)
+    # TODO: add in other immediate input error handling
+    osm_file = glob.glob(f"data/inputs/{gtfs_osm_subdir}/osm/*.pbf")
+    if len(osm_file) == 0:
+        raise FileNotFoundError("No OSM input data found.")
+    elif len(osm_file) > 1:
+        raise ValueError(
+            "Too many OSM files in input folder. Unable to determine correct "
+            "input. Remove unnecessary inputs from this directory."
+        )
+    else:
+        osm_file = Path(osm_file[0])
 
     # create directory structure upfront
     dirs = create_dir_structure(
@@ -103,6 +108,7 @@ def main():
     logger.info(f"Using fast_travel: {fast_travel}")
     logger.info(f"Using calculate_summaries: {calculate_summaries}")
     logger.info(f"Using batch_orig: {batch_orig}")
+    logger.info(f"Using gtfs_osm_subdir: {gtfs_osm_subdir}")
 
     logger.info("Detecting urban centre...")
     # put bbox into a geopandas dataframe for `get_urban_centre` input
@@ -209,7 +215,7 @@ def main():
     logger.info("Population pre-processing complete.")
 
     logger.info("Reading GTFS inputs...")
-    gtfs = MultiGtfsInstance("data/inputs/gtfs/*.zip")
+    gtfs = MultiGtfsInstance(f"data/inputs/{gtfs_osm_subdir}/gtfs/*.zip")
 
     logger.info("Clipping GTFS data to urban centre bounding box...")
     gtfs_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
