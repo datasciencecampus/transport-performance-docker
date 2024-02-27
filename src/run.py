@@ -60,8 +60,8 @@ def main():
     analyse_net_config = config["analyse_network"]
 
     # get environmental variables
-    country_name = os.getenv("COUNTRY_NAME").capitalize()
-    area_name = os.getenv("AREA_NAME").capitalize()
+    country_name = os.getenv("COUNTRY_NAME")
+    area_name = os.getenv("AREA_NAME")
     bbox = [float(x) for x in os.getenv("BBOX").split(",")]
     bbox_crs = os.getenv("BBOX_CRS")
     centre = [float(x) for x in os.getenv("CENTRE").split(",")]
@@ -79,7 +79,9 @@ def main():
     env_var_none_defence(centre, "CENTRE")
 
     # create directory structure upfront
-    dirs = create_dir_structure(area_name, add_time=True)
+    dirs = create_dir_structure(
+        area_name.replace(" ", "_").replace("-", "_"), add_time=True
+    )
 
     logger = setup_logger(
         LOGGER_NAME,
@@ -375,22 +377,28 @@ def main():
         pop_gdf,
         travel_time_threshold=general_config["max_time"],
         distance_threshold=general_config["max_distance"],
-        urban_centre_name=area_name,
-        urban_centre_country=country_name,
+        urban_centre_name=area_name.title(),
+        urban_centre_country=country_name.title(),
         urban_centre_gdf=uc_gdf.reset_index(),
     )
     logger.info("Transport performance calculated. Saving output files...")
+    suffix = (
+        f"{area_name}_{general_config['date']}_public_transit_"
+        f"{general_config['max_time']}"
+    )
     tp_plot_path = os.path.join(
-        dirs["metrics_outputs_dir"], "transport_performance.html"
+        dirs["metrics_outputs_dir"], f"transport_performance_{suffix}.html"
     )
     tp_plot_const_cmap_path = os.path.join(
-        dirs["metrics_outputs_dir"], "transport_performance_const_cmap.html"
+        dirs["metrics_outputs_dir"],
+        f"transport_performance_const_cmap_{suffix}.html",
     )
     tp_output_path = os.path.join(
-        dirs["metrics_outputs_dir"], "transport_performance.parquet"
+        dirs["metrics_outputs_dir"], f"transport_performance_{suffix}.parquet"
     )
     tp_stats_path = os.path.join(
-        dirs["metrics_outputs_dir"], "transport_performance_stats.csv"
+        dirs["metrics_outputs_dir"],
+        f"transport_performance_stats_{suffix}.csv",
     )
     plot(
         tp_df,
