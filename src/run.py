@@ -56,7 +56,6 @@ def main():
     general_config = config["general"]
     uc_config = config["urban_centre"]
     pop_config = config["population"]
-    # gtfs_config = config["gtfs"]
     osm_config = config["osm"]
     analyse_net_config = config["analyse_network"]
 
@@ -199,9 +198,7 @@ def main():
         f"Saved population centroids to parquet: {pop_outputs_centroids}"
     )
 
-    pop_outputs_gdf = os.path.join(
-        dirs["pop_outputs_dir"], "pop_centroid.parquet"
-    )
+    pop_outputs_gdf = os.path.join(dirs["pop_outputs_dir"], "pop_grid.parquet")
     rp.pop_gdf.to_parquet(pop_outputs_gdf, index=False)
     logger.info(f"Save population gdf to parquet: {pop_outputs_gdf}")
 
@@ -266,8 +263,7 @@ def main():
         )
     else:
         logger.warning(
-            "`calculate summaries` in config toml is False, therefore route/"
-            "trip summaries were skipped."
+            "`CALCULATE_SUMMARIES`=False, route/trip summaries were skipped."
         )
 
     # TODO: remove when fix is implemented
