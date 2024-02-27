@@ -23,7 +23,13 @@ from pathlib import Path
 from copy import deepcopy
 from branca import colormap
 
-from utils import create_dir_structure, setup_logger, plot
+from utils import (
+    create_dir_structure,
+    setup_logger,
+    plot,
+    env_var_none_defence,
+    gtfs_osm_subdir_name,
+)
 
 # set the container logger name
 LOGGER_NAME = "tp-docker-analysis"
@@ -32,9 +38,41 @@ CONFIG_PREFIX = "data/inputs/config/"
 
 def main():
     """Execute end-to-end analysis."""
+    # read and split out config into separate configs to minimise line lengths
+    config_file = os.path.join(CONFIG_PREFIX, os.getenv("CONFIG_FILE"))
+    config = toml.load(config_file)
+    general_config = config["general"]
+    uc_config = config["urban_centre"]
+    pop_config = config["population"]
+    osm_config = config["osm"]
+    analyse_net_config = config["analyse_network"]
+
+    # get environmental variables
+    country_name = os.getenv("COUNTRY_NAME")
+    area_name = os.getenv("AREA_NAME")
+    bbox = [float(x) for x in os.getenv("BBOX").split(",")]
+    bbox_crs = os.getenv("BBOX_CRS")
+    centre = [float(x) for x in os.getenv("CENTRE").split(",")]
+    centre_crs = os.getenv("CENTRE_CRS")
+    buffer_estimation_crs = os.getenv("BUFFER_ESTIMATION_CRS")
+    empty_feed = bool(int(os.getenv("EMPTY_FEED")))
+    fast_travel = bool(int(os.getenv("FAST_TRAVEL")))
+    calculate_summaries = bool(int(os.getenv("CALCULATE_SUMMARIES")))
+    batch_orig = bool(int(os.getenv("BATCH_ORIG")))
+    gtfs_osm_subdir = os.getenv("GTFS_OSM_SUBDIR")
+
+    # check required env vars are not None
+    env_var_none_defence(country_name, "COUNTRY_NAME")
+    env_var_none_defence(area_name, "AREA_NAME")
+    env_var_none_defence(bbox, "BBOX")
+    env_var_none_defence(centre, "CENTRE")
+
+    # correct the gtfs osm sub directory
+    gtfs_osm_subdir = gtfs_osm_subdir_name(country_name, gtfs_osm_subdir)
+
     # immediate error handling (to fail fast)
     # TODO: add in other immediate input error handling
-    osm_file = glob.glob("data/inputs/osm/*.pbf")
+    osm_file = glob.glob(f"data/inputs/{gtfs_osm_subdir}/osm/*.pbf")
     if len(osm_file) == 0:
         raise FileNotFoundError("No OSM input data found.")
     elif len(osm_file) > 1:
@@ -45,40 +83,38 @@ def main():
     else:
         osm_file = Path(osm_file[0])
 
-    # read and split out config into separate configs to minimise line lengths
-    config_file = os.path.join(CONFIG_PREFIX, os.getenv("CONFIG_FILE"))
-    config = toml.load(config_file)
-    general_config = config["general"]
-    uc_config = config["urban_centre"]
-    pop_config = config["population"]
-    gtfs_config = config["gtfs"]
-    osm_config = config["osm"]
-    analyse_net_config = config["analyse_network"]
-
     # create directory structure upfront
-    dirs = create_dir_structure(general_config["area_name"], add_time=True)
+    dirs = create_dir_structure(
+        area_name.replace(" ", "_").replace("-", "_"), add_time=True
+    )
 
     logger = setup_logger(
         LOGGER_NAME,
         file_name=os.path.join(
-            dirs["logger_dir"], f"{general_config['area_name']}_analysis.txt"
+            dirs["logger_dir"], f"{area_name}_analysis.txt"
         ),
     )
-    logger.info(
-        f"Analysing transport performane of {general_config['area_name']}"
-    )
+    logger.info(f"Analysing transport performane of {area_name}")
     logger.info(f"Created analysis directory structure at {dirs['files_dir']}")
-    logger.info(f"Using config file {config_file}")
+    logger.info(f"Using config file: {config_file}")
+    logger.info(f"Using area_name: {country_name}")
+    logger.info(f"Using area_name: {area_name}")
+    logger.info(f"Using bbox: {bbox}")
+    logger.info(f"Using bbox_crs: {bbox_crs}")
+    logger.info(f"Using centre: {centre}")
+    logger.info(f"Using centre_crs: {centre_crs}")
+    logger.info(f"Using buffer_estimation_crs: {buffer_estimation_crs}")
+    logger.info(f"Using empty_feed: {empty_feed}")
+    logger.info(f"Using fast_travel: {fast_travel}")
+    logger.info(f"Using calculate_summaries: {calculate_summaries}")
+    logger.info(f"Using batch_orig: {batch_orig}")
+    logger.info(f"Using gtfs_osm_subdir: {gtfs_osm_subdir}")
 
     logger.info("Detecting urban centre...")
     # put bbox into a geopandas dataframe for `get_urban_centre` input
-    bbox_gdf = gpd.GeoDataFrame(
-        geometry=[box(*uc_config["bbox"])], crs=uc_config["bbox_crs"]
-    )
-    if uc_config["bbox_crs"] != "ESRI:54009":
-        logger.info(
-            f"Convering bbox_gdf from {uc_config['bbox_crs']} to 'ESRI:54009'"
-        )
+    bbox_gdf = gpd.GeoDataFrame(geometry=[box(*bbox)], crs=bbox_crs)
+    if bbox_crs != "ESRI:54009":
+        logger.info(f"Convering bbox_gdf from {bbox_crs} to 'ESRI:54009'")
         bbox_gdf.to_crs("ESRI:54009", inplace=True)
 
     # merge input raster files
@@ -97,10 +133,10 @@ def main():
     uc = UrbanCentre(merged_uc_file)
     uc_gdf = uc.get_urban_centre(
         bbox_gdf,
-        centre=tuple(uc_config["centre"]),
-        centre_crs=uc_config["centre_crs"],
+        centre=tuple(centre),
+        centre_crs=centre_crs,
         buffer_size=uc_config["buffer_size"],
-        buffer_estimation_crs=uc_config["buffer_estimation_crs"],
+        buffer_estimation_crs=buffer_estimation_crs,
     )
 
     # set the index to the label column to make filtering easier
@@ -170,9 +206,7 @@ def main():
         f"Saved population centroids to parquet: {pop_outputs_centroids}"
     )
 
-    pop_outputs_gdf = os.path.join(
-        dirs["pop_outputs_dir"], "pop_centroid.parquet"
-    )
+    pop_outputs_gdf = os.path.join(dirs["pop_outputs_dir"], "pop_grid.parquet")
     rp.pop_gdf.to_parquet(pop_outputs_gdf, index=False)
     logger.info(f"Save population gdf to parquet: {pop_outputs_gdf}")
 
@@ -181,13 +215,11 @@ def main():
     logger.info("Population pre-processing complete.")
 
     logger.info("Reading GTFS inputs...")
-    gtfs = MultiGtfsInstance("data/inputs/gtfs/*.zip")
+    gtfs = MultiGtfsInstance(f"data/inputs/{gtfs_osm_subdir}/gtfs/*.zip")
 
     logger.info("Clipping GTFS data to urban centre bounding box...")
     gtfs_bbox = list(uc_gdf.to_crs("EPSG:4326").loc["bbox"].geometry.bounds)
-    gtfs.filter_to_bbox(
-        gtfs_bbox, delete_empty_feeds=gtfs_config["empty_feed"]
-    )
+    gtfs.filter_to_bbox(gtfs_bbox, delete_empty_feeds=empty_feed)
 
     # display min, max, and no unique dates across all GTFS inputs
     gtfs_dates = set()
@@ -199,7 +231,7 @@ def main():
     )
 
     logger.info("Validating filtered GTFS...")
-    gtfs.is_valid({"far_stops": gtfs_config["fast_travel"]})
+    gtfs.is_valid({"far_stops": fast_travel})
     pre_clean_valid_path = os.path.join(
         dirs["gtfs_outputs_dir"], "pre_clean_validity.csv"
     )
@@ -207,17 +239,17 @@ def main():
     logger.info(f"Pre-cleaning validity data saved: {pre_clean_valid_path}")
 
     logger.info("Cleaning filtered GTFS...")
-    gtfs.clean_feeds({"fast_travel": gtfs_config["fast_travel"]})
+    gtfs.clean_feeds({"fast_travel": fast_travel})
 
     logger.info("Validating filtered GTFS post cleaning...")
-    gtfs.is_valid({"far_stops": gtfs_config["fast_travel"]})
+    gtfs.is_valid({"far_stops": fast_travel})
     post_clean_valid_path = os.path.join(
         dirs["gtfs_outputs_dir"], "post_clean_validity.csv"
     )
     gtfs.validity_df.to_csv(post_clean_valid_path, index=False)
     logger.info(f"Post-cleaning validity data saved: {post_clean_valid_path}")
 
-    if gtfs_config["calculate_summaries"]:
+    if calculate_summaries:
         post_clean_route_summary_path = os.path.join(
             dirs["gtfs_outputs_dir"], "post_cleaning_routes_summary.csv"
         )
@@ -239,8 +271,7 @@ def main():
         )
     else:
         logger.warning(
-            "`calculate summaries` in config toml is False, therefore route/"
-            "trip summaries were skipped."
+            "`CALCULATE_SUMMARIES`=False, route/trip summaries were skipped."
         )
 
     # TODO: remove when fix is implemented
@@ -258,9 +289,7 @@ def main():
     logger.info(f"Post-cleaning stops map saved: {stops_map_path}")
 
     logger.info("Writing cleaned GTFS to file...")
-    gtfs.filter_to_date(
-        general_config["date"], delete_empty_feeds=gtfs_config["empty_feed"]
-    )
+    gtfs.filter_to_date(general_config["date"], delete_empty_feeds=empty_feed)
 
     # manually create a synthetic calendar.txt for R5PY to detect valid dates
     for inst in gtfs.instances:
@@ -325,7 +354,7 @@ def main():
     logger.info("Calculating OD matrix...")
     analysis_dt = datetime.datetime.strptime(general_config["date"], "%Y%m%d")
     an.od_matrix(
-        batch_orig=analyse_net_config["batch_orig"],
+        batch_orig=batch_orig,
         distance=general_config["max_distance"],
         departure=datetime.datetime(
             analysis_dt.year,
@@ -354,22 +383,28 @@ def main():
         pop_gdf,
         travel_time_threshold=general_config["max_time"],
         distance_threshold=general_config["max_distance"],
-        urban_centre_name=general_config["area_name"].capitalize(),
-        urban_centre_country=general_config["area_country"].capitalize(),
+        urban_centre_name=area_name.title(),
+        urban_centre_country=country_name.title(),
         urban_centre_gdf=uc_gdf.reset_index(),
     )
     logger.info("Transport performance calculated. Saving output files...")
+    suffix = (
+        f"{area_name}_{general_config['date']}_public_transit_"
+        f"{general_config['max_time']}"
+    )
     tp_plot_path = os.path.join(
-        dirs["metrics_outputs_dir"], "transport_performance.html"
+        dirs["metrics_outputs_dir"], f"transport_performance_{suffix}.html"
     )
     tp_plot_const_cmap_path = os.path.join(
-        dirs["metrics_outputs_dir"], "transport_performance_const_cmap.html"
+        dirs["metrics_outputs_dir"],
+        f"transport_performance_const_cmap_{suffix}.html",
     )
     tp_output_path = os.path.join(
-        dirs["metrics_outputs_dir"], "transport_performance.parquet"
+        dirs["metrics_outputs_dir"], f"transport_performance_{suffix}.parquet"
     )
     tp_stats_path = os.path.join(
-        dirs["metrics_outputs_dir"], "transport_performance_stats.csv"
+        dirs["metrics_outputs_dir"],
+        f"transport_performance_stats_{suffix}.csv",
     )
     plot(
         tp_df,
@@ -414,8 +449,7 @@ def main():
     logger.info(f"Transport performance parquet saved: {tp_output_path}")
 
     logger.info(
-        f"*** Transport performance analysis of {general_config['area_name']} "
-        "complete! ***"
+        f"*** Transport performance analysis of {area_name} " "complete! ***"
     )
 
 
