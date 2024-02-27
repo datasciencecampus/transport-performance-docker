@@ -23,7 +23,12 @@ from pathlib import Path
 from copy import deepcopy
 from branca import colormap
 
-from utils import create_dir_structure, setup_logger, plot
+from utils import (
+    create_dir_structure,
+    setup_logger,
+    plot,
+    env_var_none_defence,
+)
 
 # set the container logger name
 LOGGER_NAME = "tp-docker-analysis"
@@ -67,6 +72,12 @@ def main():
     fast_travel = bool(int(os.getenv("FAST_TRAVEL")))
     calculate_summaries = bool(int(os.getenv("CALCULATE_SUMMARIES")))
     batch_orig = bool(int(os.getenv("BATCH_ORIG")))
+
+    # check required env vars are not None
+    env_var_none_defence(country_name, "COUNTRY_NAME")
+    env_var_none_defence(area_name, "AREA_NAME")
+    env_var_none_defence(bbox, "BBOX")
+    env_var_none_defence(centre, "CENTRE")
 
     # create directory structure upfront
     dirs = create_dir_structure(area_name, add_time=True)

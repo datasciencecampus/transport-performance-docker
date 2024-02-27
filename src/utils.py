@@ -295,3 +295,29 @@ def plot(
         m.save(save)
 
     return m
+
+
+def env_var_none_defence(env_var: str, var_name: str) -> None:
+    """Environment variable defences against None values.
+
+    Handles 3 cases:
+    1. `None` - when os.getenv() fails
+    2. "None" - the default set in the docker-compose.yaml
+    3. "" - when the default in docker-compose.yaml is removed (default
+    docker behaviour is to set an empty string).
+
+    Parameters
+    ----------
+    env_var : str
+        the environment variable value
+    var_name : str
+        the name of the environment variable
+
+    Raises
+    ------
+    ValueError
+        When the environment variable is not set as required.
+
+    """
+    if (env_var is None) or (env_var == "None") or (env_var == ""):
+        raise ValueError(f"{var_name} is a required environment variable.")
