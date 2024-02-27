@@ -62,6 +62,7 @@ def main():
     bbox_crs = os.getenv("BBOX_CRS")
     centre = [float(x) for x in os.getenv("CENTRE").split(",")]
     centre_crs = os.getenv("CENTRE_CRS")
+    buffer_estimation_crs = os.getenv("BUFFER_ESTIMATION_CRS")
     empty_feed = bool(int(os.getenv("EMPTY_FEED")))
     fast_travel = bool(int(os.getenv("FAST_TRAVEL")))
     calculate_summaries = bool(int(os.getenv("CALCULATE_SUMMARIES")))
@@ -85,6 +86,7 @@ def main():
     logger.info(f"Using bbox_crs: {bbox_crs}")
     logger.info(f"Using centre: {centre}")
     logger.info(f"Using centre_crs: {centre_crs}")
+    logger.info(f"Using buffer_estimation_crs: {buffer_estimation_crs}")
     logger.info(f"Using empty_feed: {empty_feed}")
     logger.info(f"Using fast_travel: {fast_travel}")
     logger.info(f"Using calculate_summaries: {calculate_summaries}")
@@ -116,7 +118,7 @@ def main():
         centre=tuple(centre),
         centre_crs=centre_crs,
         buffer_size=uc_config["buffer_size"],
-        buffer_estimation_crs=uc_config["buffer_estimation_crs"],
+        buffer_estimation_crs=buffer_estimation_crs,
     )
 
     # set the index to the label column to make filtering easier

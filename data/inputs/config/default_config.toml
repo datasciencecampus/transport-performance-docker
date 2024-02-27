@@ -6,7 +6,6 @@ max_distance = 11.25  # this is in kilometers
 
 [urban_centre]  # configuration section for urban centre
 buffer_size = 12000
-buffer_estimation_crs = "EPSG:27700"
 subset_regex="GHS_POP_E2020_GLOBE_R2023A_54009_1000_"
 
 [population]  # configuration section for population
