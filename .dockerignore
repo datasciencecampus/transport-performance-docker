@@ -59,6 +59,11 @@ venv.bak/
 
 # folders
 data/*
+!data/inputs/
+data/inputs/*
+!data/inputs/gtfs/
+data/inputs/gtfs/*
+!data/inputs/gtfs/route_lookup.pkl
 outputs/*
 
 # VSCode config

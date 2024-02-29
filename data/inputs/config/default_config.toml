@@ -1,0 +1,21 @@
+title = "Common config for an E2E"
+[general]
+date = "20231212"  # needs to be GTFS type date string-like YYYYMMDD
+max_time = 45   # this is in minutes
+max_distance = 11.25  # this is in kilometers
+
+[urban_centre]  # configuration section for urban centre
+buffer_size = 12000
+subset_regex="GHS_POP_E2020_GLOBE_R2023A_54009_1000_"
+
+[population]  # configuration section for population
+subset_regex="GHS_POP_E2020_GLOBE_R2023A_54009_100_"
+threshold = 1  # set small and positive, to remove 0 pop cells
+
+[osm] # configuration section for osm clipping
+tag_filter = false
+
+[analyse_network]  # configuration for the analyse_network stage
+departure_hour = 8
+departure_minute = 0
+departure_time_window = 1  # this is in hours

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2024-02-29
+
+### Added
+- Environment variables now set an urban centre configuration. 'Core'/common config between urban centres remains in the toml.
+- `Makefile` to execute a subset of urban centres.
+- Population grid and centroid export to parquet.
+- Transport performance export to parquet.
+- Constant 0-100% colour scale transport performance maps.
+- Patch to create dummy `calendar.txt` file when one does not exist.
+- Urban centre bbox CRS conversion.
+- Urban centre and population raster file merging.
+- Population raster file resampling.
+- Added `MultiGtfsInstance` - resolves [#1] and [#2].
+- Improved input data folder structure to handle bespoke GTFS and OSM data subdirs - reolves [#1]
+
+### Fixed
+- Updated GTFS date filtering and corrected to using `filter_gtfs()` and `filter_bbox()` - fixes [#4] and [#6].
+- Now uses a common analysis date arg for whole pipelin - fixes [#8]
+- Now uses a common max distance and time for whole pipeline - fixes [#9]
+- `default_config.toml` added as an example config file - fixes [#10]
+- `run.py` executes entire pipeline - fixes [#11]
+
+### Removed
+- Need for individual toml file configurations for each urban centre.
+- Newport OD matrix checks - resolves [#7].
 
 ## [0.4.0] - 2023-12-21
 
@@ -65,3 +90,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.2.0]: https://github.com/datasciencecampus/transport-performance-docker/releases/tag/v0.2.0
 [0.3.0]: https://github.com/datasciencecampus/transport-performance-docker/releases/tag/v0.3.0
 [0.4.0]: https://github.com/datasciencecampus/transport-performance-docker/releases/tag/v0.4.0
+[0.5.0]: https://github.com/datasciencecampus/transport-performance-docker/releases/tag/v0.5.0
+
+
+[#1]: https://github.com/datasciencecampus/transport-performance-docker/issues/1
+[#2]: https://github.com/datasciencecampus/transport-performance-docker/issues/2
+[#3]: https://github.com/datasciencecampus/transport-performance-docker/issues/3
+[#4]: https://github.com/datasciencecampus/transport-performance-docker/issues/4
+[#6]: https://github.com/datasciencecampus/transport-performance-docker/issues/6
+[#7]: https://github.com/datasciencecampus/transport-performance-docker/issues/7
+[#8]: https://github.com/datasciencecampus/transport-performance-docker/issues/8
+[#9]: https://github.com/datasciencecampus/transport-performance-docker/issues/9
+[#10]: https://github.com/datasciencecampus/transport-performance-docker/issues/10
+[#11]: https://github.com/datasciencecampus/transport-performance-docker/issues/11

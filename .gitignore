@@ -8,18 +8,14 @@ data/*
 !data/inputs/
 data/inputs/*
 !data/inputs/README.md
-!data/inputs/config.toml
 !data/inputs/gtfs/
-data/inputs/gtfs/*
-!data/inputs/gtfs/README.md
-!data/inputs/gtfs/route_lookup.pkl
-!data/inputs/osm/
-data/inputs/osm/*
-!data/inputs/osm/README.md
 !data/inputs/population/
+!data/inputs/urban_centre/
+!data/inputs/config/
+data/inputs/gtfs/*
+!data/inputs/gtfs/route_lookup.pkl
 data/inputs/population/*
 !data/inputs/population/README.md
-!data/inputs/urban_centre/
 data/inputs/urban_centre/*
 !data/inputs/urban_centre/README.md
 
