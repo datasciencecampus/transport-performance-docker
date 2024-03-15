@@ -322,6 +322,52 @@ def main():
             ).strftime("%Y%m%d")
 
             inst.feed.calendar = calendar_df
+        # handle case where exceptions are in calendar dates
+        if inst.feed.calendar_dates is not None:
+            # get services ids in calendar dates not in calendar
+            cal_dates = inst.feed.calendar_dates
+            cal_dates_services = set(
+                cal_dates[cal_dates.exception_type == 1].service_id.unique()
+            )
+            cal_services = set(inst.feed.calendar.service_id.unique())
+            missing_services = cal_dates_services.difference(cal_services)
+
+            # add any missing to calendar
+            if len(missing_services) != 0:
+                logger.warning(
+                    f"Missing service ids detected in {inst.gtfs_path}: "
+                    f"{missing_services}. Adding them to the calendars table."
+                )
+
+                add_calendar_df = pd.DataFrame(
+                    inst.feed.calendar_dates.service_id.unique(),
+                    columns=["service_id"],
+                )
+
+                # set all days to zero then the active day to 1 later
+                add_calendar_df.loc[:, "monday"] = 0
+                add_calendar_df.loc[:, "tuesday"] = 0
+                add_calendar_df.loc[:, "wednesday"] = 0
+                add_calendar_df.loc[:, "thursday"] = 0
+                add_calendar_df.loc[:, "friday"] = 0
+                add_calendar_df.loc[:, "saturday"] = 0
+                add_calendar_df.loc[:, "sunday"] = 0
+
+                # set start/end date to be either side of analysis date
+                date_dt = datetime.datetime.strptime(
+                    general_config["date"], "%Y%m%d"
+                )
+                add_calendar_df.loc[:, date_dt.strftime("%A").lower()] = 1
+                add_calendar_df.loc[:, "start_date"] = (
+                    date_dt - datetime.timedelta(days=1)
+                ).strftime("%Y%m%d")
+                add_calendar_df.loc[:, "end_date"] = (
+                    date_dt + datetime.timedelta(days=1)
+                ).strftime("%Y%m%d")
+
+                inst.feed.calendar = pd.concat(
+                    [inst.feed.calendar, add_calendar_df], ignore_index=True
+                )
 
     gtfs.save_feeds(dirs["interim_gtfs"])
     logger.debug("Removing `gtfs` memory allocation...")
